@@ -1,0 +1,145 @@
+@startuml Diagrama de Base de Datos
+' Configuración visual para un diagrama limpio y profesional
+hide circle
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2C3E50
+    BorderColor #34495E
+}
+
+' ==========================================
+' DEFINICIÓN DE ENTIDADES
+' ==========================================
+
+package "Módulo: Inventario" {
+    entity "ingredientes" as ingredientes {
+        * id : SERIAL <<PK>>
+        --
+        nombre : VARCHAR(100)
+        unidad_medida : VARCHAR(20)
+        stock_actual : DECIMAL(10,2)
+        stock_minimo : DECIMAL(10,2)
+        costo_unitario : DECIMAL(10,2)
+        ultima_actualizacion : TIMESTAMP
+    }
+}
+
+package "Módulo: Catálogo y Recetas" {
+    entity "categorias" as categorias {
+        * id : SERIAL <<PK>>
+        --
+        nombre : VARCHAR(50)
+        descripcion : TEXT
+    }
+
+    entity "productos" as productos {
+        * id : SERIAL <<PK>>
+        --
+        ~ categoria_id : INT <<FK>>
+        nombre : VARCHAR(100)
+        descripcion : TEXT
+        activo : BOOLEAN
+    }
+
+    entity "presentaciones" as presentaciones {
+        * id : SERIAL <<PK>>
+        --
+        ~ producto_id : INT <<FK>>
+        nombre : VARCHAR(50)
+        precio : DECIMAL(10,2)
+    }
+
+    entity "recetas" as recetas {
+        * id : SERIAL <<PK>>
+        --
+        ~ presentacion_id : INT <<FK>>
+        ~ ingrediente_id : INT <<FK>>
+        cantidad_requerida : DECIMAL(10,2)
+    }
+}
+
+package "Módulo: Paquetes y Combos" {
+    entity "paquetes" as paquetes {
+        * id : SERIAL <<PK>>
+        --
+        nombre : VARCHAR(100)
+        descripcion : TEXT
+        precio_paquete : DECIMAL(10,2)
+        activo : BOOLEAN
+    }
+
+    entity "contenido_paquete" as contenido_paquete {
+        * id : SERIAL <<PK>>
+        --
+        ~ paquete_id : INT <<FK>>
+        ~ presentacion_id : INT <<FK>>
+        cantidad : INT
+    }
+}
+
+package "Módulo: Operación y Pedidos" {
+    entity "pedidos" as pedidos {
+        * id : SERIAL <<PK>>
+        --
+        folio : VARCHAR(20)
+        cliente_nombre : VARCHAR(100)
+        tipo_entrega : ENUM
+        estado : ENUM
+        tiempo_estimado_min : INT
+        alerta_retraso : BOOLEAN
+        total : DECIMAL(10,2)
+        fecha_creacion : TIMESTAMP
+    }
+
+    entity "detalle_pedido" as detalle_pedido {
+        * id : SERIAL <<PK>>
+        --
+        ~ pedido_id : INT <<FK>>
+        ~ paquete_id : INT <<FK>> [NULLABLE]
+        ~ presentacion_id : INT <<FK>> [NULLABLE]
+        ~ parent_detalle_id : INT <<FK>> [NULLABLE]
+        es_mitad_y_mitad : BOOLEAN
+        ~ sabor_a_id : INT <<FK>> [NULLABLE]
+        ~ sabor_b_id : INT <<FK>> [NULLABLE]
+        cantidad : INT
+        precio_unitario : DECIMAL(10,2)
+        subtotal : DECIMAL(10,2)
+    }
+
+    entity "seguimiento_estados" as seguimiento_estados {
+        * id : SERIAL <<PK>>
+        --
+        ~ pedido_id : INT <<FK>>
+        estado_registrado : ENUM
+        fecha_hora : TIMESTAMP
+    }
+}
+
+' ==========================================
+' RELACIONES (Crow's Foot Notation)
+' ==========================================
+
+' Módulo Catálogo
+categorias ||--o{ productos : "1 a muchos"
+productos ||--o{ presentaciones : "1 a muchos"
+presentaciones ||--o{ recetas : "1 a muchos"
+ingredientes ||--o{ recetas : "1 a muchos"
+
+' Módulo Paquetes
+paquetes ||--o{ contenido_paquete : "1 a muchos"
+presentaciones ||--o{ contenido_paquete : "1 a muchos"
+
+' Módulo Pedidos
+pedidos ||--o{ detalle_pedido : "1 a muchos"
+paquetes |o--o{ detalle_pedido : "0..1 a muchos"
+presentaciones |o--o{ detalle_pedido : "0..1 a muchos"
+pedidos ||--o{ seguimiento_estados : "1 a muchos"
+
+' Relaciones complejas en detalle_pedido (Mitades y Combos)
+productos |o..o{ detalle_pedido : "sabor_A (Mitades)"
+productos |o..o{ detalle_pedido : "sabor_B (Mitades)"
+detalle_pedido |o..o{ detalle_pedido : "Jerarquía (Combos)"
+
+@enduml
