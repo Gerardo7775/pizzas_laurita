@@ -6,16 +6,19 @@
  * a la capa de Aplicación (Servicios).
  */
 
+const { prepararPedidoUseCase } = require('../../application/services/pedido.service');
+
 module.exports = {
   crearPedido: async (req, res) => {
     try {
       const payload = req.body;
+      const io = req.app.get('socketio');
       
-      // Aquí se inyectarían los casos de uso / servicios
-      // const ticketCerrado = await prepararPedidoUseCase(payload);
+      const exito = await prepararPedidoUseCase(payload, io);
 
-      res.status(201).json({ mensaje: 'Pedido recibido' });
+      res.status(201).json({ mensaje: 'Pedido recibido y guardado con exito' });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: error.message });
     }
   }

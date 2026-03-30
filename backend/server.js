@@ -24,7 +24,9 @@ app.use(express.json()); // Para poder leer los JSON que envíe React
 // IMPORTACIÓN DE RUTAS (Clean Architecture)
 // ==========================================
 // Aquí se inyectarán las dependencias de los controladores
-// app.use('/api/pedidos', require('./src/interfaces/routes/pedidos.routes'));
+app.use('/api/pedidos', require('./src/interfaces/routes/pedidos.routes'));
+app.use('/api/inventario', require('./src/interfaces/routes/inventario.routes'));
+app.use('/api/menu', require('./src/interfaces/routes/menu.routes'));
 
 // ==========================================
 // RUTAS REST BÁSICAS (Prueba de vida)
