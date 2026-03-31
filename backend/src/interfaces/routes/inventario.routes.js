@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const inventarioController = require('../controllers/inventario.ctrl');
+const { getInventario, getAlertasStock } = require('../controllers/inventario.ctrl');
 
-router.get('/alertas', inventarioController.obtenerAlertasInventario);
+router.get('/', getInventario);
+router.get('/alertas', getAlertasStock);
 
 module.exports = router;

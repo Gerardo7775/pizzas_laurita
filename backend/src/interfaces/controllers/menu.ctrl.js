@@ -1,31 +1,44 @@
 const db = require('../../config/database');
 
-module.exports = {
-  obtenerMenu: async (req, res) => {
+const getMenuCompleto = async (req, res) => {
     try {
-      const client = await db.pool.connect();
-      try {
-        // Obtenemos categorias
-        const resultCat = await client.query('SELECT * FROM categorias');
-        // Obtenemos productos
-        const resultProd = await client.query('SELECT * FROM productos WHERE activo = TRUE');
-        // Obtenemos presentaciones
-        const resultPres = await client.query('SELECT * FROM presentaciones');
-        // Obtenemos paquetes
-        const resultPaq = await client.query('SELECT * FROM paquetes WHERE activo = TRUE');
-        
-        res.status(200).json({
-          categorias: resultCat.rows,
-          productos: resultProd.rows,
-          presentaciones: resultPres.rows,
-          paquetes: resultPaq.rows
+        // 1. Obtenemos los productos regulares con sus presentaciones y precios
+        const productosResult = await db.query(`
+            SELECT 
+                c.nombre AS categoria,
+                p.id AS producto_id,
+                p.nombre AS producto_nombre,
+                pr.id AS presentacion_id,
+                pr.nombre AS presentacion_nombre,
+                pr.precio
+            FROM categorias c
+            JOIN productos p ON c.id = p.categoria_id
+            JOIN presentaciones pr ON p.id = pr.producto_id
+            WHERE p.activo = true
+            ORDER BY c.id, p.nombre, pr.precio ASC
+        `);
+
+        // 2. Obtenemos los paquetes/combos activos
+        const paquetesResult = await db.query(`
+            SELECT id, nombre, descripcion, precio_paquete 
+            FROM paquetes 
+            WHERE activo = true
+        `);
+
+        // Estructuramos la respuesta de forma limpia para React
+        res.json({ 
+            success: true, 
+            data: {
+                productos: productosResult.rows,
+                paquetes: paquetesResult.rows
+            }
         });
-      } finally {
-        client.release();
-      }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
+        console.error('Error al obtener el menú:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
-  }
+};
+
+module.exports = {
+    getMenuCompleto
 };

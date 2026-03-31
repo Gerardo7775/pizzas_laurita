@@ -1,19 +1,33 @@
 const db = require('../../config/database');
 
-module.exports = {
-  obtenerAlertasInventario: async (req, res) => {
+// Obtener todo el inventario (Para la tabla principal del Admin)
+const getInventario = async (req, res) => {
     try {
-      const client = await db.pool.connect();
-      try {
-        const query = 'SELECT * FROM ingredientes WHERE stock_actual <= stock_minimo';
-        const result = await client.query(query);
-        res.status(200).json(result.rows);
-      } finally {
-        client.release();
-      }
+        const result = await db.query('SELECT * FROM ingredientes ORDER BY nombre ASC');
+        res.json({ success: true, data: result.rows });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
+        console.error('Error al obtener inventario:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
-  }
+};
+
+// Obtener SOLO los ingredientes en alerta (Para el banner rojo)
+const getAlertasStock = async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT id, nombre, stock_actual, stock_minimo, unidad_medida 
+            FROM ingredientes 
+            WHERE stock_actual <= stock_minimo 
+            ORDER BY stock_actual ASC
+        `);
+        res.json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error al obtener alertas de stock:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+};
+
+module.exports = {
+    getInventario,
+    getAlertasStock
 };
