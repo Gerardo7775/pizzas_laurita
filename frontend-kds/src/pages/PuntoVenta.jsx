@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './PuntoVenta.css';
 
@@ -6,6 +6,22 @@ const PuntoVenta = () => {
   // --- ESTADOS (State) ---
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
+  const [menuPaquetes, setMenuPaquetes] = useState([]);
+  const [menuProductos, setMenuProductos] = useState([]);
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const resPaquetes = await axios.get('http://localhost:3000/api/paquetes');
+        const resMenu = await axios.get('http://localhost:3000/api/menu');
+        if (resPaquetes.data.success) setMenuPaquetes(resPaquetes.data.data);
+        if (resMenu.data.success) setMenuProductos(resMenu.data.data.productos);
+      } catch (err) {
+        console.error('Error cargando menu POS', err);
+      }
+    };
+    fetchMenu();
+  }, []);
   
   // Estado para el modal de mitades
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,25 +41,17 @@ const PuntoVenta = () => {
     setTotal(total + precio);
   };
 
-  const agregarComboMitades = () => {
-    // Nombres legibles para el ticket
-    const nombresSabores = { '1': 'Pepperoni', '2': 'Hawaiana', '3': 'Vegetariana' };
-    
+  const agregarPaquete = (paquete) => {
     const nuevoCombo = {
       tipo: 'PAQUETE',
-      nombre: 'Combo Pareja (Pizza Mitades + Refresco)',
-      precio: 180,
-      paquete_id: 1, // ID del paquete en PostgreSQL
+      nombre: paquete.paquete_nombre,
+      precio: parseFloat(paquete.precio_paquete),
+      paquete_id: paquete.paquete_id,
       cantidad: 1,
-      saborA_id: parseInt(saborA),
-      saborB_id: parseInt(saborB),
-      saborA_nombre: nombresSabores[saborA],
-      saborB_nombre: nombresSabores[saborB]
+      items: paquete.items // Items desde el BD
     };
-
     setCarrito([...carrito, nuevoCombo]);
-    setTotal(total + 180);
-    setIsModalOpen(false); // Cerramos el modal
+    setTotal(total + parseFloat(paquete.precio_paquete));
   };
 
   // --- ENVIAR AL BACKEND ---
@@ -65,24 +73,16 @@ const PuntoVenta = () => {
               paquete_id: item.paquete_id,
               cantidad: item.cantidad,
               precio_unitario: item.precio,
-              sub_items: [
-                {
-                  tipo: "PIZZA_MITADES",
-                  presentacion_id: 3, // Base de Pizza Grande
-                  es_mitad_y_mitad: true,
-                  sabor_a_id: item.saborA_id,
-                  sabor_b_id: item.saborB_id,
-                  cantidad: 1,
-                  precio_unitario: 0,
-                  notas_cocina: "Mitades configuradas desde POS"
-                },
-                {
-                  tipo: "PRODUCTO_NORMAL",
-                  presentacion_id: 4, // Refresco 2L
-                  cantidad: 1,
-                  precio_unitario: 0
-                }
-              ]
+              nombre: item.nombre, // Agregado para el KDS
+              sub_items: Array.isArray(item.items) ? item.items.map(subItem => ({
+                tipo: "PRODUCTO_NORMAL",
+                presentacion_id: subItem.presentacion_id,
+                cantidad: subItem.cantidad,
+                precio_unitario: 0,
+                // Extra metadata para la tabla de KDS:
+                nombre: subItem.producto_nombre,
+                presentacion_nombre: subItem.presentacion_nombre
+              })) : []
             };
           } else {
             // Producto Normal
@@ -90,7 +90,8 @@ const PuntoVenta = () => {
               tipo: "PRODUCTO_NORMAL",
               presentacion_id: item.presentacion_id,
               cantidad: item.cantidad,
-              precio_unitario: item.precio
+              precio_unitario: item.precio,
+              nombre: item.nombre // Agregado para el KDS
             };
           }
         })
@@ -123,23 +124,24 @@ const PuntoVenta = () => {
         
         <h2 className="category-title">🔥 Combos y Paquetes</h2>
         <div className="grid-menu">
-          <button 
-            className="btn-item" 
-            style={{ borderColor: '#6c5ce7' }} 
-            onClick={() => setIsModalOpen(true)}
-          >
-            Combo Pareja <span>$180.00</span>
-          </button>
+          {menuPaquetes.length > 0 ? menuPaquetes.map((paquete) => (
+            <button key={`paq-${paquete.paquete_id}`} className="btn-item" style={{ borderColor: '#6c5ce7' }} onClick={() => agregarPaquete(paquete)}>
+              {paquete.paquete_nombre} <span>${parseFloat(paquete.precio_paquete).toFixed(2)}</span>
+            </button>
+          )) : (
+            <p style={{color: '#777'}}>No hay combos activos</p>
+          )}
         </div>
 
         <h2 className="category-title">🍕 Pizzas y Snacks</h2>
         <div className="grid-menu">
-          <button className="btn-item" onClick={() => agregarNormal('Pepperoni Gde', 150, 1)}>
-            Pepperoni Gde <span>$150.00</span>
-          </button>
-          <button className="btn-item" onClick={() => agregarNormal('Papas Francesas', 55, 7)}>
-            Papas Francesas <span>$55.00</span>
-          </button>
+          {menuProductos.length > 0 ? menuProductos.map((prod) => (
+            <button key={`prod-${prod.presentacion_id}`} className="btn-item" onClick={() => agregarNormal(`${prod.producto_nombre} ${prod.presentacion_nombre}`, parseFloat(prod.precio), prod.presentacion_id)}>
+              {prod.producto_nombre} ({prod.presentacion_nombre}) <span>${parseFloat(prod.precio).toFixed(2)}</span>
+            </button>
+          )) : (
+            <p style={{color: '#777'}}>No hay productos activos</p>
+          )}
         </div>
       </div>
 
@@ -164,12 +166,9 @@ const PuntoVenta = () => {
                   <span>${item.precio.toFixed(2)}</span>
                 </div>
                 {/* Desglose visual si es un combo de mitades */}
-                {item.tipo === 'PAQUETE' && (
-                  <>
-                    <div className="cart-item-sub">↳ 🍕 Mitad {item.saborA_nombre} / Mitad {item.saborB_nombre}</div>
-                    <div className="cart-item-sub">↳ 🥤 1x Refresco Cola 2L</div>
-                  </>
-                )}
+                {item.tipo === 'PAQUETE' && item.items && item.items.map((sub, idx) => (
+                    <div key={idx} className="cart-item-sub">↳ {sub.cantidad}x {sub.producto_nombre} ({sub.presentacion_nombre})</div>
+                ))}
               </li>
             ))
           )}

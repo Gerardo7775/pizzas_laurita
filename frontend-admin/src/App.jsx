@@ -1,19 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SidebarLayout from './layouts/SidebarLayout';
-import PuntoVenta from './pages/PuntoVenta';
+import BackOffice from './pages/BackOffice';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<SidebarLayout />}>
-          <Route index element={<Navigate to="/pos" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           
-          <Route path="pos" element={<PuntoVenta />} />
-          
-          <Route path="cocina" element={<h2>👨‍🍳 Pantalla de Cocina KDS (En construcción)</h2>} />
-          <Route path="admin" element={<h2>⚙️ BackOffice Administrativo (En construcción)</h2>} />
+          <Route path="dashboard" element={<BackOffice />} />
+          <Route path="inventario" element={<BackOffice />} />
+          <Route path="catalogo" element={<BackOffice />} />
+          <Route path="paquetes" element={<BackOffice />} />
         </Route>
+        
+        {/* Ruta 404 Fuera del Layout */}
+        <Route path="*" element={<NotFound appName="SIGP Administrador" />} />
       </Routes>
     </Router>
   );

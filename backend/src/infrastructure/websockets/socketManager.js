@@ -3,8 +3,11 @@
  * Pertenece a la capa de Infraestructura
  */
 
+let ioInstance = null;
+
 module.exports = {
   init: (io) => {
+    ioInstance = io;
     io.on('connection', (socket) => {
       console.log(`🔌 Nueva pantalla conectada: ${socket.id}`);
 
@@ -18,5 +21,6 @@ module.exports = {
         console.log(`❌ Pantalla desconectada: ${socket.id}`);
       });
     });
-  }
+  },
+  getIO: () => ioInstance
 };

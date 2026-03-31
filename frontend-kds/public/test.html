@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket Test</h1>
+  <div id="log"></div>
+  <script>
+    const socket = io("http://localhost:3000");
+    const log = document.getElementById('log');
+    
+    socket.on('connect', () => {
+      log.innerHTML += '<p>✅ CONECTADO AL BACKEND</p>';
+      socket.emit('unirse_cocina');
+    });
+
+    socket.on('nuevo_pedido_cocina', (data) => {
+      log.innerHTML += '<p>🎉 RECIBIDO: ' + JSON.stringify(data) + '</p>';
+      console.log('NUEVO PEDIDO:', data);
+    });
+  </script>
+</body>
+</html>

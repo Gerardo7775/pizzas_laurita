@@ -1,14 +1,10 @@
-/* ========================================== */
-/* VARIABLES GLOBALES Y RESET                 */
-/* ========================================== */
 :root {
-  --bg-light: #f0f2f5;
+  --bg-main: #f4f7f6;
   --white: #ffffff;
-  --primary: #6c5ce7;
-  --primary-hover: #5849c4;
-  --text-dark: #2d3436;
-  --gray: #b2bec3;
-  --border: #dfe6e9;
+  --sidebar: #1e2b3c;
+  --sidebar-hover: #2c3e50;
+  --primary: #009688;
+  --text-main: #333333;
 }
 
 body, html {
@@ -21,67 +17,58 @@ body, html {
 .app-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
   overflow: hidden;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ========================================== */
-/* BARRA DE NAVEGACIÓN LATERAL                */
-/* ========================================== */
 .sidebar {
-  width: 80px;
-  background-color: #2d3436;
+  width: 250px;
+  background-color: var(--sidebar);
+  color: var(--white);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: 20px;
-  z-index: 10;
-}
-
-.sidebar .brand {
-  color: #fff;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-.nav-btn {
-  background: none;
-  border: none;
-  color: var(--gray);
-  font-size: 24px;
-  margin-bottom: 30px;
-  cursor: pointer;
   transition: 0.3s;
+}
+
+.brand {
+  padding: 20px;
+  font-size: 22px;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  width: 100%;
+  gap: 10px;
+}
+
+.nav-item {
+  padding: 15px 20px;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 15px;
   text-decoration: none;
-  border-right: 3px solid transparent;
-  box-sizing: border-box;
+  color: var(--white);
 }
 
-.nav-btn span {
-  font-size: 11px;
-  margin-top: 5px;
+.nav-item:hover {
+  background-color: var(--sidebar-hover);
 }
 
-.nav-btn:hover,
-.nav-btn.active {
+.nav-item.active {
+  background-color: var(--sidebar-hover);
+  border-left-color: var(--primary);
   color: var(--primary);
-  border-right: 3px solid var(--primary);
+  font-weight: bold;
 }
 
-/* ========================================== */
-/* CONTENEDOR PRINCIPAL                       */
-/* ========================================== */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 20px;
+  overflow-y: auto;
 }

@@ -1,29 +1,30 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import './SidebarLayout.css'; // Aquí meteremos el CSS oscuro que hicimos en el HTML
+import './SidebarLayout.css';
 
 const SidebarLayout = () => {
   return (
     <div className="app-container">
-      {/* BARRA LATERAL */}
+      {/* BARRA LATERAL ADMIN */}
       <nav className="sidebar">
-        <div className="brand">SIGP</div>
+        <div className="brand">⚙️ SIGP Admin</div>
         
-        <NavLink to="/pos" className={({ isActive }) => isActive ? "nav-btn active" : "nav-btn"}>
-          🛒<span>Venta</span>
+        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          📊 Dashboard
         </NavLink>
-        
-        <NavLink to="/cocina" className={({ isActive }) => isActive ? "nav-btn active" : "nav-btn"}>
-          👨‍🍳<span>Cocina</span>
+        <NavLink to="/inventario" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          📦 Inventario
         </NavLink>
-
-        <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-btn active" : "nav-btn"}>
-          ⚙️<span>Admin</span>
+        <NavLink to="/catalogo" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          🍕 Catálogo y Recetas
+        </NavLink>
+        <NavLink to="/paquetes" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          🎁 Combos / Paquetes
         </NavLink>
       </nav>
 
       {/* CONTENIDO PRINCIPAL DINÁMICO */}
       <main className="main-content">
-        <Outlet /> {/* Aquí React inyectará la pantalla dependiendo de la URL */}
+        <Outlet />
       </main>
     </div>
   );

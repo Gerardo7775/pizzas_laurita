@@ -5,8 +5,12 @@
 const express = require('express');
 const router = express.Router();
 
-// Ejemplos de uso (controladores a implementar)
-const pedidosController = require('../controllers/pedidos.ctrl');
-router.post('/', pedidosController.crearPedido);
+const { crearPedido, getHistorialDia, getPedidosCocina, actualizarEstadoPedido } = require('../controllers/pedidos.ctrl');
+
+// Rutas
+router.post('/', crearPedido);
+router.get('/historial', getHistorialDia);
+router.get('/cocina', getPedidosCocina);
+router.patch('/:id/estado', actualizarEstadoPedido);
 
 module.exports = router;

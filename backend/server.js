@@ -27,6 +27,8 @@ app.use(express.json()); // Para poder leer los JSON que envíe React
 app.use('/api/pedidos', require('./src/interfaces/routes/pedidos.routes'));
 app.use('/api/inventario', require('./src/interfaces/routes/inventario.routes'));
 app.use('/api/menu', require('./src/interfaces/routes/menu.routes'));
+app.use('/api/catalogo', require('./src/interfaces/routes/catalogo.routes'));
+app.use('/api/paquetes', require('./src/interfaces/routes/paquetes.routes'));
 
 // ==========================================
 // RUTAS REST BÁSICAS (Prueba de vida)

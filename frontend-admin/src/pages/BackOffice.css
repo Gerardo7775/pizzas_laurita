@@ -1,0 +1,166 @@
+/* src/pages/BackOffice.css */
+:root {
+  --danger: #e74c3c;
+  --warning: #ff9800;
+  --success: #2ecc71;
+  --text-muted: #777777;
+  --border: #e0e0e0;
+  --primary-dark: #00796b;
+}
+
+.admin-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-main);
+}
+
+.topbar { 
+  background: var(--white); 
+  padding: 15px 30px; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+
+.topbar .user-info { 
+  font-weight: bold; 
+  color: var(--text-muted); 
+}
+
+.tabs-nav {
+  display: flex;
+  gap: 15px;
+  padding: 20px 30px 10px;
+  border-bottom: 2px solid var(--border);
+  background-color: var(--bg-main);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding-bottom: 5px;
+  border-bottom: 3px solid transparent;
+  transition: 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--primary);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.main-panel { 
+  padding: 30px; 
+  overflow-y: auto;
+  flex: 1;
+  animation: fadeIn 0.3s ease; 
+}
+
+/* --- DASHBOARD CARDS --- */
+.card-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+  gap: 20px; 
+  margin-bottom: 30px; 
+}
+
+.stat-card { 
+  background: var(--white); 
+  padding: 20px; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+  border-top: 4px solid var(--primary); 
+}
+
+.stat-card h3 { 
+  margin: 0 0 10px 0; 
+  font-size: 14px; 
+  color: var(--text-muted); 
+  text-transform: uppercase; 
+}
+
+.stat-card .value { 
+  font-size: 28px; 
+  font-weight: bold; 
+  margin: 0; 
+}
+
+.stat-card.alert { 
+  border-top-color: var(--danger); 
+  background-color: #fff5f5; 
+}
+
+.stat-card.alert .value { color: var(--danger); }
+
+/* --- TABLAS --- */
+.table-container { 
+  background: var(--white); 
+  border-radius: 8px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+  overflow: hidden; 
+  margin-bottom: 20px; 
+}
+
+.table-header { 
+  padding: 20px; 
+  border-bottom: 1px solid var(--border); 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+
+.table-header h2 { margin: 0; font-size: 18px; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background-color: #fafafa; color: var(--text-muted); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+tr:hover { background-color: #f9f9f9; }
+
+.status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.status-ok { background-color: #e8f5e9; color: var(--success); }
+.status-low { background-color: #ffebee; color: var(--danger); animation: blink 2s infinite; }
+
+/* --- BOTONES Y FORMS --- */
+.btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+.btn-outline:hover { background: #f0f0f0; }
+
+/* --- MODAL --- */
+.modal-overlay { 
+  position: fixed; 
+  top: 0; left: 0; 
+  width: 100%; height: 100%; 
+  background: rgba(0,0,0,0.5); 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  z-index: 100; 
+}
+
+.modal { 
+  background: white; 
+  padding: 30px; 
+  border-radius: 8px; 
+  width: 500px; 
+  max-width: 90%; 
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--text-muted); font-size: 13px; }
+.form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
