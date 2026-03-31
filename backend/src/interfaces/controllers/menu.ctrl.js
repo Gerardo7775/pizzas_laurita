@@ -8,14 +8,23 @@ const getMenuCompleto = async (req, res) => {
                 c.nombre AS categoria,
                 p.id AS producto_id,
                 p.nombre AS producto_nombre,
+                p.es_mitad_mitad,
                 pr.id AS presentacion_id,
-                pr.nombre AS presentacion_nombre,
+                t.nombre AS presentacion_nombre,
+                p.categoria_id,
+                pr.tamano_id,
                 pr.precio
             FROM categorias c
             JOIN productos p ON c.id = p.categoria_id
             JOIN presentaciones pr ON p.id = pr.producto_id
+            JOIN tamanos t ON pr.tamano_id = t.id
             WHERE p.activo = true
-            ORDER BY c.id, p.nombre, pr.precio ASC
+              AND (
+                p.es_mitad_mitad = true 
+                OR LOWER(c.nombre) != 'pizza'
+                OR EXISTS (SELECT 1 FROM recetas r WHERE r.presentacion_id = pr.id)
+              )
+            ORDER BY c.nombre, p.nombre, pr.precio ASC
         `);
 
         // 2. Obtenemos los paquetes/combos activos
