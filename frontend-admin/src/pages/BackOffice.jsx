@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import './BackOffice.css';
 
 // --- Utilidad: Similitud entre dos strings (0 a 1) ---
@@ -41,6 +42,7 @@ const BackOffice = () => {
   const [categorias, setCategorias] = useState([]);
   const [tamanos, setTamanos] = useState([]);
   const [paquetes, setPaquetes] = useState([]);
+  const [ventasDia, setVentasDia] = useState(0);
   const [cargando, setCargando] = useState(false);
   
   // --- ESTADOS DEL MODAL PRODUCTO ---
@@ -150,9 +152,29 @@ const BackOffice = () => {
   };
 
   // --- CARGAR DATOS ---
+  const fetchVentasDia = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/api/pedidos/historial');
+      if (res.data.success) {
+        const pedidos = res.data.data.pedidos || [];
+        const hoyStr = new Date().toDateString();
+        const suma = pedidos.reduce((acc, p) => {
+          if (new Date(p.fecha_creacion).toDateString() === hoyStr && p.estado !== 'CANCELADO') {
+            return acc + parseFloat(p.total);
+          }
+          return acc;
+        }, 0);
+        setVentasDia(suma);
+      }
+    } catch (error) {
+       console.warn('Error al calcular ventas del día', error);
+    }
+  };
+
   const fetchDatos = async () => {
     setCargando(true);
     try {
+      fetchVentasDia(); // Parcial
       // Usamos allSettled: si una falla, las demás siguen actualizando la UI
       const [resInv, resAle, resCat, resPaq, resCategorias, resTamanos] = await Promise.allSettled([
         axios.get('http://localhost:3000/api/inventario'),
@@ -192,6 +214,28 @@ const BackOffice = () => {
 
   useEffect(() => {
     fetchDatos();
+
+    // WebSocket para recargar inventario al despachar pedidos
+    const socket = io('http://localhost:3000');
+    
+    socket.on('stock_actualizado', async () => {
+      // Recargar solo el stock sin mostrar spinner completo
+      try {
+        const [resInv, resAle] = await Promise.all([
+          axios.get('http://localhost:3000/api/inventario'),
+          axios.get('http://localhost:3000/api/inventario/alertas')
+        ]);
+        setInventario(resInv.data.data || []);
+        setAlertas(resAle.data.data || []);
+      } catch (e) {
+        console.warn('Error al actualizar inventario vía socket', e);
+      }
+    });
+
+    socket.on('nuevo_pedido_cocina', fetchVentasDia);
+    socket.on('estado_pedido_actualizado', fetchVentasDia);
+
+    return () => socket.disconnect();
   }, []);
 
   // --- LÓGICA DE CRUD ---
@@ -740,7 +784,7 @@ const BackOffice = () => {
             <div className="card-grid">
               <div className="stat-card">
                 <h3>Ventas del Día</h3>
-                <p className="value">$0.00</p>
+                <p className="value">${ventasDia.toFixed(2)}</p>
               </div>
               <div className="stat-card">
                 <h3>Ingredientes Activos</h3>
@@ -841,10 +885,10 @@ const BackOffice = () => {
                     <strong>Combos</strong>
                     <p>{paquetes.length} paquetes activos</p>
                   </div>
-                  <div className="quick-card quick-card-highlight">
+                  <div className="quick-card quick-card-highlight" onClick={() => navigate('/historial')}>
                     <span className="quick-icon">💰</span>
                     <strong>Ventas del Día</strong>
-                    <p>$0.00 facturado hoy</p>
+                    <p>${ventasDia.toFixed(2)} facturado hoy</p>
                   </div>
                 </div>
               </div>

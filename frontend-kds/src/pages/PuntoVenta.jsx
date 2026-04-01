@@ -37,6 +37,13 @@ const PuntoVenta = () => {
   // Estado para UX de éxito en cobro
   const [orderSuccess, setOrderSuccess] = useState(false);
 
+  // Estado para el modal de checkout
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [tiempoPreparacion, setTiempoPreparacion] = useState(20);
+  const [programarPedido, setProgramarPedido] = useState(false);
+  const [fechaProgramada, setFechaProgramada] = useState('');
+  const [errorFecha, setErrorFecha] = useState('');
+
   // --- LÓGICA DE MITADES DINÁMICAS ---
   const handleProductClick = (prod) => {
     if (prod.es_mitad_mitad) {
@@ -204,9 +211,30 @@ const PuntoVenta = () => {
      setSeleccionesPaquete({ ...seleccionesPaquete, [idx]: nuevaSel });
   };
 
+  // --- ABRIR MODAL CHECKOUT ---
+  const handleAbrirCheckout = () => {
+    if (carrito.length === 0) return alert('El carrito está vacío');
+    // Precalcular fecha mínima (ahora + 1 min) para el input datetime-local
+    const ahora = new Date();
+    ahora.setMinutes(ahora.getMinutes() + 1);
+    const minDateStr = ahora.toISOString().slice(0, 16);
+    setFechaProgramada(minDateStr);
+    setErrorFecha('');
+    setProgramarPedido(false);
+    setTiempoPreparacion(20);
+    setCheckoutModalOpen(true);
+  };
+
   // --- ENVIAR AL BACKEND ---
   const cobrarPedido = async () => {
-    if (carrito.length === 0) return alert('El carrito está vacío');
+    // Validar fecha programada si está activa
+    if (programarPedido) {
+      if (!fechaProgramada) { setErrorFecha('Debes seleccionar una fecha y hora'); return; }
+      const elegida = new Date(fechaProgramada);
+      if (elegida <= new Date()) { setErrorFecha('La fecha debe ser mayor a la hora actual'); return; }
+    }
+    setErrorFecha('');
+    setCheckoutModalOpen(false);
 
     // 1. Construimos el JSON Payload tal como lo espera nuestro Backend
     const payload = {
@@ -216,6 +244,8 @@ const PuntoVenta = () => {
       },
       pedido: {
         total_calculado: total,
+        tiempo_estimado_min: parseInt(tiempoPreparacion) || 20,
+        fecha_programada: programarPedido ? new Date(fechaProgramada).toISOString() : null,
         items: carrito.map(item => {
           if (item.tipo === 'PAQUETE') {
             return {
@@ -223,25 +253,23 @@ const PuntoVenta = () => {
               paquete_id: item.paquete_id,
               cantidad: item.cantidad,
               precio_unitario: item.precio,
-              nombre: item.nombre, // Agregado para el KDS
+              nombre: item.nombre,
               sub_items: Array.isArray(item.items) ? item.items.map(subItem => ({
                 tipo: "PRODUCTO_NORMAL",
                 presentacion_id: subItem.presentacion_id,
                 cantidad: subItem.cantidad,
                 precio_unitario: 0,
-                // Extra metadata para la tabla de KDS:
                 nombre: subItem.producto_nombre,
                 presentacion_nombre: subItem.presentacion_nombre
               })) : []
             };
           } else {
-            // Producto Normal
             return {
               tipo: "PRODUCTO_NORMAL",
               presentacion_id: item.presentacion_id,
               cantidad: item.cantidad,
               precio_unitario: item.precio,
-              nombre: item.nombre // Agregado para el KDS
+              nombre: item.nombre
             };
           }
         })
@@ -249,19 +277,11 @@ const PuntoVenta = () => {
     };
 
     try {
-      // 2. Disparamos a la API
       await axios.post('http://localhost:3000/api/pedidos', payload);
-      
-      // Activamos Success UI en lugar del alert nativo
       setOrderSuccess(true);
-      
-      // 3. Limpiamos la caja
       setCarrito([]);
       setTotal(0);
-
-      // 4. Auto-ocultamos el modal después de 2.5 segundos para no interrumpir el flujo KDS
       setTimeout(() => setOrderSuccess(false), 2500);
-
     } catch (error) {
       console.error('Error al cobrar:', error);
       alert('Hubo un error al conectar con el servidor.');
@@ -351,7 +371,7 @@ const PuntoVenta = () => {
             <span>Total:</span>
             <span>${total.toFixed(2)}</span>
           </div>
-          <button className="btn-checkout" onClick={cobrarPedido}>
+          <button className="btn-checkout" onClick={handleAbrirCheckout}>
             Cobrar y Enviar a Cocina
           </button>
         </div>
@@ -480,6 +500,92 @@ const PuntoVenta = () => {
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================= */}
+      {/* MODAL DE CHECKOUT (TIEMPO + AGENDA)     */}
+      {/* ======================================= */}
+      {checkoutModalOpen && (
+        <div className="modal-overlay" style={{ zIndex: 9000, backdropFilter: 'blur(3px)' }}>
+          <div className="modal-content" style={{ maxWidth: '440px', borderRadius: '16px', padding: '30px', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+              <span style={{ fontSize: '28px', marginRight: '10px' }}>🧾</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', color: '#2d3436' }}>Confirmar Pedido</h3>
+                <p style={{ margin: 0, color: '#636e72', fontSize: '13px' }}>Total: <strong style={{ color: '#6c5ce7' }}>${total.toFixed(2)}</strong></p>
+              </div>
+            </div>
+
+            {/* Tiempo de preparación */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#2d3436' }}>
+                ⏱️ Tiempo estimado de preparación
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="240"
+                  value={tiempoPreparacion}
+                  onChange={(e) => setTiempoPreparacion(e.target.value)}
+                  style={{ width: '80px', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '18px', fontWeight: 'bold', textAlign: 'center' }}
+                />
+                <span style={{ color: '#636e72', fontSize: '14px' }}>minutos</span>
+                <div style={{ display: 'flex', gap: '5px', marginLeft: 'auto' }}>
+                  {[15, 20, 30, 45].map(t => (
+                    <button key={t} onClick={() => setTiempoPreparacion(t)}
+                      style={{ padding: '5px 10px', borderRadius: '20px', border: '1.5px solid #6c5ce7', background: tiempoPreparacion == t ? '#6c5ce7' : 'transparent', color: tiempoPreparacion == t ? '#fff' : '#6c5ce7', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
+                      {t}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Toggle programar pedido */}
+            <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: programarPedido ? '15px' : '0' }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: '600', color: '#2d3436', fontSize: '14px' }}>📅 Programar para otro horario</p>
+                  <p style={{ margin: 0, color: '#636e72', fontSize: '12px' }}>Permite agendar el pedido para más tarde o un día futuro</p>
+                </div>
+                <label style={{ position: 'relative', display: 'inline-block', width: '46px', height: '26px' }}>
+                  <input type="checkbox" checked={programarPedido} onChange={(e) => setProgramarPedido(e.target.checked)}
+                    style={{ opacity: 0, width: 0, height: 0 }} />
+                  <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: programarPedido ? '#6c5ce7' : '#b2bec3', borderRadius: '26px', transition: '0.3s' }}>
+                    <span style={{ position: 'absolute', content: '', height: '20px', width: '20px', left: programarPedido ? '23px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s', display: 'block' }}></span>
+                  </span>
+                </label>
+              </div>
+              {programarPedido && (
+                <div>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '13px', color: '#636e72' }}>Fecha y Hora de Entrega</label>
+                  <input
+                    type="datetime-local"
+                    value={fechaProgramada}
+                    min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                    onChange={(e) => { setFechaProgramada(e.target.value); setErrorFecha(''); }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: errorFecha ? '1.5px solid #e74c3c' : '1.5px solid #ddd', fontSize: '14px', boxSizing: 'border-box' }}
+                  />
+                  {errorFecha && <p style={{ color: '#e74c3c', margin: '5px 0 0 0', fontSize: '12px' }}>⚠️ {errorFecha}</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Botones */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setCheckoutModalOpen(false)}
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1.5px solid #ddd', background: 'transparent', color: '#636e72', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>
+                Cancelar
+              </button>
+              <button onClick={cobrarPedido}
+                style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)', color: '#fff', cursor: 'pointer', fontWeight: '700', fontSize: '15px', boxShadow: '0 4px 15px rgba(108,92,231,0.35)' }}>
+                ✅ {programarPedido ? 'Programar Pedido' : 'Cobrar y Enviar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

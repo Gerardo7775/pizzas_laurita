@@ -29,6 +29,7 @@ app.use('/api/inventario', require('./src/interfaces/routes/inventario.routes'))
 app.use('/api/menu', require('./src/interfaces/routes/menu.routes'));
 app.use('/api/catalogo', require('./src/interfaces/routes/catalogo.routes'));
 app.use('/api/paquetes', require('./src/interfaces/routes/paquetes.routes'));
+app.use('/api/estadisticas', require('./src/interfaces/routes/estadisticas.routes'));
 
 // ==========================================
 // RUTAS REST BÁSICAS (Prueba de vida)
