@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SidebarLayout from './layouts/SidebarLayout';
 import BackOffice from './pages/BackOffice';
+import Historial from './pages/Historial';
+import Estadisticas from './pages/Estadisticas';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -14,6 +16,8 @@ function App() {
           <Route path="inventario" element={<BackOffice />} />
           <Route path="catalogo" element={<BackOffice />} />
           <Route path="paquetes" element={<BackOffice />} />
+          <Route path="historial" element={<Historial />} />
+          <Route path="estadisticas" element={<Estadisticas />} />
         </Route>
         
         {/* Ruta 404 Fuera del Layout */}

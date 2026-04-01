@@ -35,6 +35,12 @@ CREATE TABLE categorias (
     descripcion TEXT
 );
 
+CREATE TABLE tamanos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE -- Ej: 'Familiar', 'Mediana', 'Personal', '600ml'
+);
+
+
 CREATE TABLE productos (
     id SERIAL PRIMARY KEY,
     categoria_id INT NOT NULL REFERENCES categorias(id) ON DELETE RESTRICT,
@@ -46,14 +52,15 @@ CREATE TABLE productos (
 
 ### 2. Presentaciones y Recetas
 
-> Las presentaciones definen los tamaños y precios base. La tabla intermedia (`recetas`) define qué y cuánto lleva cada presentación (La Receta).
+> Las presentaciones definen los tamaños y precios base vinculando el producto a un catálogo de tamaños global.
 
 ```sql
 CREATE TABLE presentaciones (
     id SERIAL PRIMARY KEY,
     producto_id INT NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    nombre VARCHAR(50) NOT NULL, -- Ej: 'Grande', 'Mediana', 'Personal', '2 Litros'
-    precio DECIMAL(10,2) NOT NULL
+    tamano_id INT NOT NULL REFERENCES tamanos(id) ON DELETE RESTRICT,
+    precio DECIMAL(10,2) NOT NULL,
+    UNIQUE(producto_id, tamano_id)
 );
 
 CREATE TABLE recetas (

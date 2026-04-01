@@ -20,6 +20,12 @@ const SidebarLayout = () => {
         <NavLink to="/paquetes" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
           🎁 Combos / Paquetes
         </NavLink>
+        <NavLink to="/historial" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          📖 Ventas e Historial
+        </NavLink>
+        <NavLink to="/estadisticas" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+          📈 Panel de Estadísticas
+        </NavLink>
       </nav>
 
       {/* CONTENIDO PRINCIPAL DINÁMICO */}

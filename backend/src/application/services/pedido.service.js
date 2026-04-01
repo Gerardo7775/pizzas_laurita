@@ -11,14 +11,15 @@ const prepararPedidoUseCase = async (payload, io) => {
     
     // 1. Insertar el Pedido principal
     const insertPedidoText = `
-      INSERT INTO pedidos (folio, cliente_nombre, tipo_entrega, tiempo_estimado_min, total)
-      VALUES ($1, $2, $3, $4, $5) RETURNING id
+      INSERT INTO pedidos (folio, cliente_nombre, tipo_entrega, tiempo_estimado_min, fecha_programada, total)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
     `;
     const insertPedidoValues = [
       folio, 
       cliente.nombre, 
       cliente.tipo_entrega, 
-      15, // tiempo_estimado_min estatico para prueba
+      pedido.tiempo_estimado_min || 15,
+      pedido.fecha_programada || null,
       pedido.total_calculado
     ];
     
@@ -82,9 +83,12 @@ const prepararPedidoUseCase = async (payload, io) => {
     if (io) {
       console.log('🍕 Emite evento WebSocket a cocina');
       io.emit('nuevo_pedido_cocina', {
-        pedido_id,
+        id: pedido_id,
+        id_local: pedido_id,   // El mismo ID real de la BD, sin timestamps ficticios
         folio,
-        cliente,
+        cliente_nombre: cliente.nombre,
+        estado: 'PENDIENTE',
+        hora_ingreso: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         items: pedido.items,
         total: pedido.total_calculado
       });
