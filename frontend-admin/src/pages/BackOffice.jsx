@@ -30,6 +30,8 @@ const similitud = (a, b) => {
 };
 
 const BackOffice = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const location = useLocation();
   const navigate = useNavigate();
   const activePath = location.pathname.substring(1) || 'dashboard'; // Quitamos el '/'
@@ -154,7 +156,7 @@ const BackOffice = () => {
   // --- CARGAR DATOS ---
   const fetchVentasDia = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/pedidos/historial');
+      const res = await axios.get(`${API_URL}/api/pedidos/historial`);
       if (res.data.success) {
         const pedidos = res.data.data.pedidos || [];
         const hoyStr = new Date().toDateString();
@@ -177,12 +179,12 @@ const BackOffice = () => {
       fetchVentasDia(); // Parcial
       // Usamos allSettled: si una falla, las demás siguen actualizando la UI
       const [resInv, resAle, resCat, resPaq, resCategorias, resTamanos] = await Promise.allSettled([
-        axios.get('http://localhost:3000/api/inventario'),
-        axios.get('http://localhost:3000/api/inventario/alertas'),
-        axios.get('http://localhost:3000/api/catalogo'),
-        axios.get('http://localhost:3000/api/paquetes'),
-        axios.get('http://localhost:3000/api/catalogo/categorias'),
-        axios.get('http://localhost:3000/api/catalogo/tamanos')
+        axios.get(`${API_URL}/api/inventario`),
+        axios.get(`${API_URL}/api/inventario/alertas`),
+        axios.get(`${API_URL}/api/catalogo`),
+        axios.get(`${API_URL}/api/paquetes`),
+        axios.get(`${API_URL}/api/catalogo/categorias`),
+        axios.get(`${API_URL}/api/catalogo/tamanos`)
       ]);
 
       if (resInv.status === 'fulfilled')  setInventario(resInv.value.data.data || []);
@@ -216,14 +218,14 @@ const BackOffice = () => {
     fetchDatos();
 
     // WebSocket para recargar inventario al despachar pedidos
-    const socket = io('http://localhost:3000');
+    const socket = io(API_URL);
     
     socket.on('stock_actualizado', async () => {
       // Recargar solo el stock sin mostrar spinner completo
       try {
         const [resInv, resAle] = await Promise.all([
-          axios.get('http://localhost:3000/api/inventario'),
-          axios.get('http://localhost:3000/api/inventario/alertas')
+          axios.get(`${API_URL}/api/inventario`),
+          axios.get(`${API_URL}/api/inventario/alertas`)
         ]);
         setInventario(resInv.data.data || []);
         setAlertas(resAle.data.data || []);
@@ -250,7 +252,7 @@ const BackOffice = () => {
       return showToast(`Ya existe "${duplicado.nombre}". Revisa si es el mismo ingrediente.`, 'error');
     }
     try {
-      await axios.post('http://localhost:3000/api/inventario', {
+      await axios.post(`${API_URL}/api/inventario`, {
         nombre:               nuevoIng.nombre,
         unidad_compra:        nuevoIng.unidad_compra,
         unidad_receta:        nuevoIng.unidad_receta,
@@ -283,7 +285,7 @@ const BackOffice = () => {
   const handleGuardarEdicion = async () => {
     if (!editandoIng.nombre) return showToast('El nombre es obligatorio.', 'warning');
     try {
-      await axios.put(`http://localhost:3000/api/inventario/${editandoIng.id}`, {
+      await axios.put(`${API_URL}/api/inventario/${editandoIng.id}`, {
         nombre:            editandoIng.nombre,
         unidad_compra:     editandoIng.unidad_compra,
         unidad_receta:     editandoIng.unidad_receta,
@@ -305,7 +307,7 @@ const BackOffice = () => {
       message: `Estás a punto de eliminar "${ing.nombre}" del inventario.\nEsta acción no se puede deshacer.`,
       onConfirm: async () => {
         try {
-          await axios.delete(`http://localhost:3000/api/inventario/${ing.id}`);
+          await axios.delete(`${API_URL}/api/inventario/${ing.id}`);
           showToast(`"${ing.nombre}" eliminado correctamente 🗑️`);
           fetchDatos();
         } catch (error) {
@@ -323,7 +325,7 @@ const BackOffice = () => {
       async (valor, closeModal) => {
         if (!isNaN(valor) && valor.trim() !== '') {
           try {
-            await axios.patch(`http://localhost:3000/api/inventario/${id}/ajuste`, { nuevo_stock: parseFloat(valor) });
+            await axios.patch(`${API_URL}/api/inventario/${id}/ajuste`, { nuevo_stock: parseFloat(valor) });
             showToast(`Stock de ${nombre} ajustado a ${valor} ${unidadReceta}`);
             fetchDatos();
             closeModal();
@@ -345,7 +347,7 @@ const BackOffice = () => {
       async (valor, closeModal) => {
         if (!isNaN(valor) && parseFloat(valor) > 0) {
           try {
-            const res = await axios.post(`http://localhost:3000/api/inventario/${id}/compra`, { cantidad_comprada: parseFloat(valor) });
+            const res = await axios.post(`${API_URL}/api/inventario/${id}/compra`, { cantidad_comprada: parseFloat(valor) });
             showToast(res.data.message + ' 📦');
             fetchDatos();
             closeModal();
@@ -415,10 +417,10 @@ const BackOffice = () => {
       };
 
       if (nuevoPaquete.id) {
-         await axios.put(`http://localhost:3000/api/paquetes/${nuevoPaquete.id}`, payload);
+         await axios.put(`${API_URL}/api/paquetes/${nuevoPaquete.id}`, payload);
          showToast('Combo actualizado correctamente. ✏️');
       } else {
-         await axios.post('http://localhost:3000/api/paquetes', payload);
+         await axios.post(`${API_URL}/api/paquetes`, payload);
          showToast('Combo creado. Ya está disponible para la venta. 🎉');
       }
 
@@ -463,7 +465,7 @@ const BackOffice = () => {
       confirmText: 'Sí, Eliminar Definitivamente',
       onConfirm: async () => {
         try {
-          await axios.delete(`http://localhost:3000/api/paquetes/${paq.paquete_id}`);
+          await axios.delete(`${API_URL}/api/paquetes/${paq.paquete_id}`);
           showToast(`"${paq.paquete_nombre}" eliminado de los combos 🗑️`);
           fetchDatos();
         } catch (error) {
@@ -497,10 +499,10 @@ const BackOffice = () => {
       };
 
       if (isEdit) {
-        await axios.put(`http://localhost:3000/api/catalogo/productos/${nuevoProducto.producto_id}/presentaciones/${nuevoProducto.presentacion_id}`, payload);
+        await axios.put(`${API_URL}/api/catalogo/productos/${nuevoProducto.producto_id}/presentaciones/${nuevoProducto.presentacion_id}`, payload);
         showToast('Producto actualizado en catálogo correctamente ✏️');
       } else {
-        await axios.post('http://localhost:3000/api/catalogo/productos', payload);
+        await axios.post(`${API_URL}/api/catalogo/productos`, payload);
         showToast('Producto añadido al catálogo correctamente 🎉');
       }
 
@@ -534,7 +536,7 @@ const BackOffice = () => {
       confirmText: 'Sí, Eliminar Definitivamente',
       onConfirm: async () => {
         try {
-          await axios.delete(`http://localhost:3000/api/catalogo/productos/${item.producto_id}/presentaciones/${item.presentacion_id}`);
+          await axios.delete(`${API_URL}/api/catalogo/productos/${item.producto_id}/presentaciones/${item.presentacion_id}`);
           showToast(`"${item.producto_nombre}" eliminado del catálogo 🗑️`);
           fetchDatos();
         } catch (error) {
@@ -558,7 +560,7 @@ const BackOffice = () => {
         }
 
         try {
-          const res = await axios.post('http://localhost:3000/api/catalogo/categorias', { nombre: nombreCat.trim() });
+          const res = await axios.post(`${API_URL}/api/catalogo/categorias`, { nombre: nombreCat.trim() });
           showToast('Categoría creada! 🏷️');
           const nuevaCat = res.data.data;
           setCategorias(prevCats => [...prevCats, nuevaCat]);
@@ -578,7 +580,7 @@ const BackOffice = () => {
       message: `Estás a punto de eliminar la categoría "${nombre}".\nEsto fallará si aún tiene productos asignados.`,
       onConfirm: async () => {
         try {
-          await axios.delete(`http://localhost:3000/api/catalogo/categorias/${id}`);
+          await axios.delete(`${API_URL}/api/catalogo/categorias/${id}`);
           showToast(`Categoría "${nombre}" eliminada 🗑️`);
           setCategorias(categorias.filter(c => c.id !== id));
         } catch (error) {
@@ -596,7 +598,7 @@ const BackOffice = () => {
       async (nuevoNombre, closeModal) => {
         if (!nuevoNombre.trim() || nuevoNombre.trim() === nombreActual) return closeModal();
         try {
-          const res = await axios.put(`http://localhost:3000/api/catalogo/categorias/${id}`, { nombre: nuevoNombre.trim() });
+          const res = await axios.put(`${API_URL}/api/catalogo/categorias/${id}`, { nombre: nuevoNombre.trim() });
           showToast('Categoría actualizada! ✏️');
           setCategorias(categorias.map(c => c.id === id ? res.data.data : c));
           fetchDatos(); 
@@ -624,7 +626,7 @@ const BackOffice = () => {
         }
 
         try {
-          const res = await axios.post('http://localhost:3000/api/catalogo/tamanos', { nombre: nombreTam.trim() });
+          const res = await axios.post(`${API_URL}/api/catalogo/tamanos`, { nombre: nombreTam.trim() });
           showToast('Tamaño creado! 📏');
           const nuevoTam = res.data.data;
           setTamanos(prev => [...prev, nuevoTam]);
@@ -644,7 +646,7 @@ const BackOffice = () => {
       message: `Estás a punto de eliminar el tamaño "${nombre}".\nEsto fallará si ya hay productos usándolo.`,
       onConfirm: async () => {
         try {
-          await axios.delete(`http://localhost:3000/api/catalogo/tamanos/${id}`);
+          await axios.delete(`${API_URL}/api/catalogo/tamanos/${id}`);
           showToast(`Tamaño "${nombre}" eliminado 🗑️`);
           setTamanos(tamanos.filter(t => t.id !== id));
         } catch (error) {
@@ -662,7 +664,7 @@ const BackOffice = () => {
       async (nuevoNombre, closeModal) => {
         if (!nuevoNombre.trim() || nuevoNombre.trim() === nombreActual) return closeModal();
         try {
-          const res = await axios.put(`http://localhost:3000/api/catalogo/tamanos/${id}`, { nombre: nuevoNombre.trim() });
+          const res = await axios.put(`${API_URL}/api/catalogo/tamanos/${id}`, { nombre: nuevoNombre.trim() });
           showToast('Tamaño actualizado! ✏️');
           setTamanos(tamanos.map(t => t.id === id ? res.data.data : t));
           fetchDatos(); 
@@ -746,7 +748,7 @@ const BackOffice = () => {
           cantidad: i.cantidad_requerida
         }))
       };
-      await axios.post(`http://localhost:3000/api/catalogo/${presentacionAEditar.presentacion_id}/receta`, payload);
+      await axios.post(`${API_URL}/api/catalogo/${presentacionAEditar.presentacion_id}/receta`, payload);
       showToast('Receta configurada con éxito 🎉');
       setIsRecetaModalOpen(false);
       fetchDatos();

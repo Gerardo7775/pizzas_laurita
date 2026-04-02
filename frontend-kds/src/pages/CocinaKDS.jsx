@@ -4,6 +4,8 @@ import axios from 'axios';
 import './CocinaKDS.css';
 
 const CocinaKDS = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const [pedidos, setPedidos] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef(null);
@@ -76,7 +78,7 @@ const CocinaKDS = () => {
     // 0. CARGAR ESTADO INICIAL DESDE LA BASE DE DATOS (A prueba de recargas "F5")
     const cargarPedidosIniciales = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/pedidos/cocina');
+        const res = await axios.get(`${API_URL}/api/pedidos/cocina`);
         if (res.data.success) {
           setPedidos(res.data.data);
         }
@@ -88,7 +90,7 @@ const CocinaKDS = () => {
 
     // 1. Inicializar el socket solo una vez al montar el componente (Sobrevive StrictMode y Recargas)
     if (!socketRef.current) {
-      socketRef.current = io('http://localhost:3000');
+      socketRef.current = io(API_URL);
     }
     const socket = socketRef.current;
 
@@ -142,7 +144,7 @@ const CocinaKDS = () => {
         p.id_local === id ? { ...p, estado: nuevoEstado } : p
       ));
       try {
-        await axios.patch(`http://localhost:3000/api/pedidos/${id}/estado`, { estado: nuevoEstado });
+        await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, { estado: nuevoEstado });
       } catch (e) {
         console.error('Error al sincronizar estado con servidor', e);
       }
@@ -150,7 +152,7 @@ const CocinaKDS = () => {
       // Despacharlo (LISTO_ENTREGA → ENTREGADO)
       setPedidos(pedidos.filter(p => p.id_local !== id));
       try {
-        await axios.patch(`http://localhost:3000/api/pedidos/${id}/estado`, { estado: 'ENTREGADO' });
+        await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, { estado: 'ENTREGADO' });
       } catch (e) {
         console.error('Error al marcar como entregado', e);
       }
@@ -195,7 +197,7 @@ const CocinaKDS = () => {
                 setTimeout(() => hablarAlerta(p.folio, nuevoNivel), sonidoActivoRef.current ? 900 : 0);
               }
               // Guardar el nivel en la BD
-              axios.patch(`http://localhost:3000/api/pedidos/${p.id}/estado`, {
+              axios.patch(`${API_URL}/api/pedidos/${p.id}/estado`, {
                 estado: p.estado,
                 alerta_retraso: nuevoNivel
               }).catch(e => console.error('Error sincronizando alerta', e));
@@ -301,7 +303,7 @@ const CocinaKDS = () => {
     setPedidos(pedidos.filter(p => p.id_local !== id));
     setCancelModalOpen(false);
     try {
-      await axios.patch(`http://localhost:3000/api/pedidos/${id}/estado`, {
+      await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, {
         estado: 'CANCELADO',
         motivo_cancelacion: motivoCancelacion.trim() || null
       });

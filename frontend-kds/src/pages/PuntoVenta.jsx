@@ -3,6 +3,8 @@ import axios from 'axios';
 import './PuntoVenta.css';
 
 const PuntoVenta = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // --- ESTADOS (State) ---
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
@@ -12,8 +14,8 @@ const PuntoVenta = () => {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const resPaquetes = await axios.get('http://localhost:3000/api/paquetes');
-        const resMenu = await axios.get('http://localhost:3000/api/menu');
+        const resPaquetes = await axios.get(`${API_URL}/api/paquetes`);
+        const resMenu = await axios.get(`${API_URL}/api/menu`);
         if (resPaquetes.data.success) setMenuPaquetes(resPaquetes.data.data);
         if (resMenu.data.success) setMenuProductos(resMenu.data.data.productos);
       } catch (err) {
@@ -277,7 +279,7 @@ const PuntoVenta = () => {
     };
 
     try {
-      await axios.post('http://localhost:3000/api/pedidos', payload);
+      await axios.post(`${API_URL}/api/pedidos`, payload);
       setOrderSuccess(true);
       setCarrito([]);
       setTotal(0);

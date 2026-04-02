@@ -46,6 +46,8 @@ const Estadisticas = () => {
   }, [rango]);
 
   // Cargar datos
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const fetchEstadisticas = async () => {
     setLoading(true);
     try {
@@ -55,10 +57,10 @@ const Estadisticas = () => {
 
       // Usando request en paralelo localmente
       const [resKpis, resHorario, resTop, resInv] = await Promise.all([
-        axios.get('http://localhost:3000/api/estadisticas/kpis', { params }),
-        axios.get('http://localhost:3000/api/estadisticas/horario', { params }),
-        axios.get('http://localhost:3000/api/estadisticas/top-productos', { params }),
-        axios.get('http://localhost:3000/api/estadisticas/inventario', { params })
+        axios.get(`${API_URL}/api/estadisticas/kpis`, { params }),
+        axios.get(`${API_URL}/api/estadisticas/horario`, { params }),
+        axios.get(`${API_URL}/api/estadisticas/top-productos`, { params }),
+        axios.get(`${API_URL}/api/estadisticas/inventario`, { params })
       ]);
 
       setKpis(resKpis.data.data);

@@ -12,10 +12,12 @@ const Historial = () => {
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
   const [orden, setOrden] = useState('HORA_DESC'); 
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchHistorial = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/pedidos/historial');
+        const res = await axios.get(`${API_URL}/api/pedidos/historial`);
         if (res.data.success) {
           setPedidos(res.data.data.pedidos);
         }
@@ -27,7 +29,7 @@ const Historial = () => {
     };
     fetchHistorial();
 
-    const socket = io('http://localhost:3000');
+    const socket = io(API_URL);
     
     // Escuchar nuevos pedidos en cocina (para ponerlos en el historial como PENDIENTE)
     socket.on('nuevo_pedido_cocina', (data) => {

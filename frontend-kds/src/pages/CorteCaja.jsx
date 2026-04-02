@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const CorteCaja = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
   const [resumen, setResumen] = useState({ total_dia: 0, cantidad_pedidos: 0 });
 
   useEffect(() => {
     const fetchCaja = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/pedidos/historial');
+        const res = await axios.get(`${API_URL}/api/pedidos/historial`);
         if (res.data.success) {
           setResumen(res.data.data.resumen);
         }

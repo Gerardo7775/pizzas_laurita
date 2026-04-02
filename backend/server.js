@@ -9,15 +9,19 @@ const app = express();
 const server = http.createServer(app);
 
 // Configuración de WebSockets (Socket.io)
+const origenesPermitidos = process.env.FRONTEND_URL || '*';
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // En producción, aquí pondremos la URL de tu app de React
-    methods: ["GET", "POST"]
+    origin: origenesPermitidos,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
   }
 });
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: origenesPermitidos
+}));
 app.use(express.json()); // Para poder leer los JSON que envíe React
 
 // ==========================================
