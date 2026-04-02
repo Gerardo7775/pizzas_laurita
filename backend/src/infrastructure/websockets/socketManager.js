@@ -3,11 +3,33 @@
  * Pertenece a la capa de Infraestructura
  */
 
+const jwt = require('jsonwebtoken');
+
 let ioInstance = null;
 
 module.exports = {
   init: (io) => {
     ioInstance = io;
+
+    // 🛡️ Guardia de Seguridad para WebSockets
+    // Intercepta la conexión antes de que ocurra (o la batea si no trae token)
+    io.use((socket, next) => {
+        const token = socket.handshake.auth.token;
+        const secret = process.env.JWT_SECRET || 'MI_SECRETO_SUPER_SEGURO_123';
+
+        if (!token) {
+            return next(new Error('Acceso denegado: Token no proporcionado'));
+        }
+
+        jwt.verify(token, secret, (err, decoded) => {
+            if (err) {
+                return next(new Error('Acceso denegado: Token inválido o expirado'));
+            }
+            socket.user = decoded; // Guardamos los datos (id, rol, nombre) en el socket
+            next();
+        });
+    });
+
     io.on('connection', (socket) => {
       console.log(`🔌 Nueva pantalla conectada: ${socket.id}`);
 

@@ -25,15 +25,23 @@ app.use(cors({
 app.use(express.json()); // Para poder leer los JSON que envíe React
 
 // ==========================================
+// MIDDLEWARES DE SEGURIDAD
+// ==========================================
+const verificarToken = require('./src/middlewares/auth.middleware');
+
+// ==========================================
 // IMPORTACIÓN DE RUTAS (Clean Architecture)
 // ==========================================
-// Aquí se inyectarán las dependencias de los controladores
-app.use('/api/pedidos', require('./src/interfaces/routes/pedidos.routes'));
-app.use('/api/inventario', require('./src/interfaces/routes/inventario.routes'));
-app.use('/api/menu', require('./src/interfaces/routes/menu.routes'));
-app.use('/api/catalogo', require('./src/interfaces/routes/catalogo.routes'));
-app.use('/api/paquetes', require('./src/interfaces/routes/paquetes.routes'));
-app.use('/api/estadisticas', require('./src/interfaces/routes/estadisticas.routes'));
+// 🔓 RUTAS PÚBLICAS
+app.use('/api/auth', require('./src/interfaces/routes/auth.routes'));    // Login
+
+// 🔐 RUTAS PROTEGIDAS (Requieren Gafete JWT)
+app.use('/api/pedidos', verificarToken, require('./src/interfaces/routes/pedidos.routes'));
+app.use('/api/inventario', verificarToken, require('./src/interfaces/routes/inventario.routes'));
+app.use('/api/menu', verificarToken, require('./src/interfaces/routes/menu.routes'));
+app.use('/api/catalogo', verificarToken, require('./src/interfaces/routes/catalogo.routes'));
+app.use('/api/paquetes', verificarToken, require('./src/interfaces/routes/paquetes.routes'));
+app.use('/api/estadisticas', verificarToken, require('./src/interfaces/routes/estadisticas.routes'));
 
 // ==========================================
 // RUTAS REST BÁSICAS (Prueba de vida)

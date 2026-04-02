@@ -90,7 +90,10 @@ const CocinaKDS = () => {
 
     // 1. Inicializar el socket solo una vez al montar el componente (Sobrevive StrictMode y Recargas)
     if (!socketRef.current) {
-      socketRef.current = io(API_URL);
+      const token = localStorage.getItem('token');
+      socketRef.current = io(API_URL, {
+        auth: { token }
+      });
     }
     const socket = socketRef.current;
 

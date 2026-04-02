@@ -218,7 +218,10 @@ const BackOffice = () => {
     fetchDatos();
 
     // WebSocket para recargar inventario al despachar pedidos
-    const socket = io(API_URL);
+    const token = localStorage.getItem('token');
+    const socket = io(API_URL, {
+      auth: { token }
+    });
     
     socket.on('stock_actualizado', async () => {
       // Recargar solo el stock sin mostrar spinner completo
