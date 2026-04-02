@@ -1,0 +1,179 @@
+/* =========================================
+   KDS LOGIN — Monitor de Cocina
+   ========================================= */
+
+.kds-login-bg {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e1e2f 0%, #252540 50%, #2d3436 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Burbujas/Llamas decorativas */
+.kds-bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  filter: blur(40px);
+  animation: floatKDS 10s ease-in-out infinite;
+}
+
+.bubble-1 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #ff4757, #e84118);
+  top: -150px;
+  left: -100px;
+}
+
+.bubble-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #f0932b, #ffbe76);
+  bottom: -100px;
+  right: -50px;
+  animation-delay: -2s;
+}
+
+.bubble-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #eb4d4b, #ff7979);
+  top: 40%;
+  right: 10%;
+  animation-delay: -5s;
+}
+
+@keyframes floatKDS {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(30px, -50px) rotate(5deg); }
+  66% { transform: translate(-20px, 20px) rotate(-5deg); }
+}
+
+/* Tarjeta KDS */
+.kds-login-card {
+  background: rgba(42, 42, 64, 0.6);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 5px solid #ff4757;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  text-align: center;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kds-login-logo {
+  font-size: 50px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 15px rgba(255, 71, 87, 0.4));
+}
+
+.kds-login-title {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.kds-login-subtitle {
+  color: #a29bfe;
+  font-size: 13px;
+  margin: 5px 0 30px 0;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Formulario */
+.kds-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.kds-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kds-login-field label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.kds-login-field input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 15px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.kds-login-field input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ff4757;
+  box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.1);
+}
+
+.kds-login-error {
+  background: rgba(255, 71, 87, 0.15);
+  border-left: 4px solid #ff4757;
+  padding: 12px;
+  border-radius: 6px;
+  color: #ff7675;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kds-login-btn {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+  box-shadow: 0 10px 20px -5px rgba(255, 71, 87, 0.4);
+}
+
+.kds-login-btn:hover:not(:disabled) {
+  background: #ff6b81;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px -5px rgba(255, 71, 87, 0.5);
+}
+
+.kds-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kds-login-footer {
+  margin-top: 30px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+}

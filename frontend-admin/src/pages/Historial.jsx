@@ -29,7 +29,10 @@ const Historial = () => {
     };
     fetchHistorial();
 
-    const socket = io(API_URL);
+    const token = localStorage.getItem('token');
+    const socket = io(API_URL, {
+      auth: { token }
+    });
     
     // Escuchar nuevos pedidos en cocina (para ponerlos en el historial como PENDIENTE)
     socket.on('nuevo_pedido_cocina', (data) => {
