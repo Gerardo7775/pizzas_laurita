@@ -58,6 +58,7 @@ const Login = ({ onLoginSuccess }) => {
               placeholder="ej. admin"
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
+              disabled={loading}
               required
               autoComplete="username"
             />
@@ -71,6 +72,7 @@ const Login = ({ onLoginSuccess }) => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               required
               autoComplete="current-password"
             />
@@ -87,6 +89,20 @@ const Login = ({ onLoginSuccess }) => {
 
         <p className="login-footer">SIGP Admin · v2.0</p>
       </div>
+
+      {/* 🍕 PANTALLA DE CARGA CINEMÁTICA — aparece encima de todo al autenticar */}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="pizza-cargando">🍕</div>
+          <h2 className="loading-titulo">Conectando con la cocina...</h2>
+          <p className="texto-parpadeante">
+            Despertando los hornos en la nube, un momento por favor.
+          </p>
+          <div className="loading-bar-container">
+            <div className="loading-bar-fill" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -57,6 +57,7 @@ const Login = ({ onLoginSuccess }) => {
               placeholder="ej. cocinero"
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
+              disabled={loading}
               required
               autoComplete="username"
             />
@@ -70,6 +71,7 @@ const Login = ({ onLoginSuccess }) => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               required
               autoComplete="current-password"
             />
@@ -82,6 +84,20 @@ const Login = ({ onLoginSuccess }) => {
 
         <p className="kds-login-footer">Pizzas Laurita · SIGP v2.0</p>
       </div>
+
+      {/* 🔥 PANTALLA DE CARGA KDS — se activa al autenticar */}
+      {loading && (
+        <div className="kds-loading-overlay">
+          <div className="kds-icon-cargando">👨‍🍳</div>
+          <h2 className="kds-loading-titulo">Encendiendo los hornos...</h2>
+          <p className="kds-texto-parpadeante">
+            Conectando con la cocina en la nube, un momento.
+          </p>
+          <div className="kds-loading-bar-container">
+            <div className="kds-loading-bar-fill" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

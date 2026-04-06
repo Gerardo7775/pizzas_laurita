@@ -1,1 +1,97 @@
 /* Default index css empty out */
+
+/* ============================================
+   🔥 PANTALLA DE CARGA — KDS Monitor de Cocina
+   ============================================ */
+
+@keyframes girarChef {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulseKDS {
+  0%   { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+
+@keyframes fadeInKDS {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(12px); }
+}
+
+@keyframes barSlideKDS {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(350%); }
+}
+
+@keyframes flameFlicker {
+  0%   { text-shadow: 0 0 20px rgba(255, 71, 87, 0.8), 0 0 40px rgba(240, 147, 43, 0.5); }
+  50%  { text-shadow: 0 0 35px rgba(255, 107, 129, 1),  0 0 60px rgba(255, 190, 118, 0.7); }
+  100% { text-shadow: 0 0 20px rgba(255, 71, 87, 0.8), 0 0 40px rgba(240, 147, 43, 0.5); }
+}
+
+/* Overlay completo */
+.kds-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 12, 20, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  animation: fadeInKDS 0.35s ease forwards;
+}
+
+/* Icono giratorio */
+.kds-icon-cargando {
+  font-size: 90px;
+  display: inline-block;
+  animation: girarChef 2s linear infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+  filter: drop-shadow(0 0 28px rgba(255, 71, 87, 0.7));
+  line-height: 1;
+}
+
+/* Título */
+.kds-loading-titulo {
+  color: #ff4757;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 10px 0 0;
+  text-align: center;
+  text-transform: uppercase;
+  animation: flameFlicker 1.8s ease-in-out infinite;
+}
+
+/* Subtítulo parpadeante */
+.kds-texto-parpadeante {
+  color: #a29bfe;
+  font-size: 0.92rem;
+  text-align: center;
+  animation: pulseKDS 1.4s ease-in-out infinite alternate;
+  max-width: 300px;
+}
+
+/* Barra de progreso */
+.kds-loading-bar-container {
+  width: 240px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.kds-loading-bar-fill {
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, #ff4757, #f0932b, #ffbe76);
+  border-radius: 4px;
+  animation: barSlideKDS 1.6s ease-in-out infinite;
+}
