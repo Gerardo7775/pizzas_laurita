@@ -50,6 +50,11 @@ app.get('/api/health', (req, res) => {
   res.json({ estado: 'OK', mensaje: 'El cerebro de la pizzería está en línea 🍕' });
 });
 
+// 💓 RUTA DE LATIDO (Health Check) para UptimeRobot
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({ success: true, message: '¡El cerebro de Pizzas Laurita está despierto! 🧠' });
+});
+
 // ==========================================
 // LÓGICA DE WEBSOCKETS (Tiempo Real)
 // ==========================================
