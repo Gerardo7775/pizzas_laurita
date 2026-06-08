@@ -29,7 +29,7 @@ const getPaquetes = async (req, res) => {
             LEFT JOIN productos prod ON pres.producto_id = prod.id
             LEFT JOIN categorias cat ON pd.categoria_id = cat.id
             LEFT JOIN tamanos tam ON pd.tamano_id = tam.id
-            GROUP BY p.id
+            GROUP BY p.id, p.nombre, p.precio_paquete, p.activo
             ORDER BY p.nombre;
         `;
         const result = await db.query(query);

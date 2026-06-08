@@ -44,18 +44,34 @@ function App() {
         onClick={handleLogoutClick}
         style={{
           position: 'fixed',
-          top: 14,
-          right: 20,
+          top: 12,
+          right: 24,
           zIndex: 9999,
-          background: '#d63031',
-          color: 'white',
-          border: 'none',
-          padding: '6px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'transparent',
+          color: '#e74c3c',
+          border: '1.5px solid #e74c3c',
+          padding: '7px 16px',
           borderRadius: '8px',
           cursor: 'pointer',
           fontWeight: '600',
           fontSize: '13px',
-          boxShadow: '0 4px 12px rgba(214,48,49,0.4)',
+          fontFamily: 'inherit',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = '#e74c3c';
+          e.currentTarget.style.color = '#fff';
+          e.currentTarget.style.boxShadow = '0 4px 14px rgba(231,76,60,0.35)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = '#e74c3c';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         🚪 Cerrar Sesión

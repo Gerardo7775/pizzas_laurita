@@ -23,7 +23,7 @@ const getProductosYRecetas = async (req, res) => {
             JOIN tamanos t ON pr.tamano_id = t.id
             LEFT JOIN recetas r ON pr.id = r.presentacion_id
             LEFT JOIN ingredientes i ON r.ingrediente_id = i.id
-            GROUP BY p.id, c.id, pr.id, t.id
+            GROUP BY p.id, p.nombre, p.es_mitad_mitad, c.nombre, pr.id, t.nombre, t.id, pr.precio
             ORDER BY p.nombre, pr.precio;
         `;
         const result = await db.query(query);
