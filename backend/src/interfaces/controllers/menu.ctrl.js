@@ -21,7 +21,7 @@ const getMenuCompleto = async (req, res) => {
             WHERE p.activo = true
               AND (
                 p.es_mitad_mitad = true 
-                OR LOWER(c.nombre) != 'pizza'
+                OR c.requiere_receta = false
                 OR EXISTS (SELECT 1 FROM recetas r WHERE r.presentacion_id = pr.id)
               )
             ORDER BY c.nombre, p.nombre, pr.precio ASC

@@ -45,7 +45,7 @@ const BackOffice = () => {
   const [tamanos, setTamanos] = useState([]);
   const [paquetes, setPaquetes] = useState([]);
   const [ventasDia, setVentasDia] = useState(0);
-  const [cargando, setCargando] = useState(false);
+  const [_cargando, setCargando] = useState(false);
   
   // --- ESTADOS DEL MODAL PRODUCTO ---
   const [isProductoModalOpen, setIsProductoModalOpen] = useState(false);
@@ -268,7 +268,7 @@ const BackOffice = () => {
       setIsModalOpen(false);
       setNuevoIng({ nombre: '', unidad_compra: 'Barra', unidad_receta: 'gr', factor_conversion: '', stock_actual_receta: '', stock_minimo: '', costo_unitario: '' });
       fetchDatos();
-    } catch (error) {
+    } catch {
       showToast('Error al guardar el ingrediente', 'error');
     }
   };
@@ -299,7 +299,7 @@ const BackOffice = () => {
       showToast('Ingrediente actualizado correctamente ✅');
       setEditandoIng(null);
       fetchDatos();
-    } catch (error) {
+    } catch {
       showToast('Error al actualizar el ingrediente', 'error');
     }
   };
@@ -431,7 +431,7 @@ const BackOffice = () => {
       setNuevoPaquete({ id: null, nombre: '', descripcion: '', precio_paquete: '' });
       setItemsPaquete([]);
       fetchDatos();
-    } catch (error) {
+    } catch {
       showToast('Error al guardar el combo', 'error');
     }
   };
@@ -552,7 +552,7 @@ const BackOffice = () => {
   const handleCrearCategoria = () => {
     showInputModal(
       '🏷️ Nueva Categoría',
-      'Ingresa el nombre de la nueva categoría (ej. Bebidas, Postres):',
+      'Ingresa el nombre de la nueva categoría (ej. Bebidas, Postres).\nDespués podrás activar si requiere receta desde la tabla.',
       'Ej. Snacks...',
       async (nombreCat, closeModal) => {
         if (!nombreCat.trim()) return showToast('El nombre de la categoría no puede estar vacío.', 'warning');
@@ -563,13 +563,13 @@ const BackOffice = () => {
         }
 
         try {
-          const res = await axios.post(`${API_URL}/api/catalogo/categorias`, { nombre: nombreCat.trim() });
+          const res = await axios.post(`${API_URL}/api/catalogo/categorias`, { nombre: nombreCat.trim(), requiere_receta: false });
           showToast('Categoría creada! 🏷️');
           const nuevaCat = res.data.data;
           setCategorias(prevCats => [...prevCats, nuevaCat]);
           setNuevoProducto(prevProd => ({ ...prevProd, categoria_id: nuevaCat.id }));
           closeModal();
-        } catch (error) {
+        } catch {
           showToast('Error al crear la categoría', 'error');
         }
       },
@@ -594,6 +594,7 @@ const BackOffice = () => {
   };
 
   const handleEditarCategoria = (id, nombreActual) => {
+    const catActual = categorias.find(c => c.id === id);
     showInputModal(
       '🏷️ Editar Categoría',
       'Ingresa el nuevo nombre para esta categoría:',
@@ -601,7 +602,7 @@ const BackOffice = () => {
       async (nuevoNombre, closeModal) => {
         if (!nuevoNombre.trim() || nuevoNombre.trim() === nombreActual) return closeModal();
         try {
-          const res = await axios.put(`${API_URL}/api/catalogo/categorias/${id}`, { nombre: nuevoNombre.trim() });
+          const res = await axios.put(`${API_URL}/api/catalogo/categorias/${id}`, { nombre: nuevoNombre.trim(), requiere_receta: catActual?.requiere_receta ?? false });
           showToast('Categoría actualizada! ✏️');
           setCategorias(categorias.map(c => c.id === id ? res.data.data : c));
           fetchDatos(); 
@@ -613,6 +614,19 @@ const BackOffice = () => {
       'text',
       nombreActual
     );
+  };
+
+  const handleToggleReceta = async (id, valorActual) => {
+    const cat = categorias.find(c => c.id === id);
+    if (!cat) return;
+    try {
+      const res = await axios.put(`${API_URL}/api/catalogo/categorias/${id}`, { nombre: cat.nombre, requiere_receta: !valorActual });
+      setCategorias(categorias.map(c => c.id === id ? res.data.data : c));
+      showToast(`${cat.nombre}: receta ${!valorActual ? 'activada ✅' : 'desactivada'}`);
+      fetchDatos();
+    } catch {
+      showToast('Error al cambiar configuración', 'error');
+    }
   };
 
   const handleCrearTamano = () => {
@@ -755,7 +769,7 @@ const BackOffice = () => {
       showToast('Receta configurada con éxito 🎉');
       setIsRecetaModalOpen(false);
       fetchDatos();
-    } catch (error) {
+    } catch {
       showToast('Error al guardar la receta', 'error');
     }
   };
@@ -768,7 +782,7 @@ const BackOffice = () => {
 
   const productosSinReceta = catalogo.filter(item => 
     !item.es_mitad_mitad && 
-    item.categoria_nombre?.toLowerCase() === 'pizza' && 
+    item.requiere_receta === true && 
     item.ingredientes.length === 0
   );
 
@@ -1076,7 +1090,7 @@ const BackOffice = () => {
                       <td>
                         {item.es_mitad_mitad 
                           ? <span className="status-badge status-good" style={{background: '#27ae60', color: 'white'}}>Mitad Dinámica</span>
-                          : item.categoria_nombre?.toLowerCase() !== 'pizza'
+                          : !item.requiere_receta
                             ? <span className="status-badge status-good" style={{background: '#8e44ad', color: 'white'}}>No Requiere</span>
                             : item.ingredientes.length > 0 
                               ? <span className="status-badge status-ok">{item.ingredientes.length} Ingredientes</span>
@@ -1093,7 +1107,7 @@ const BackOffice = () => {
                           >
                             ✏️ Editar
                           </button>
-                          { !item.es_mitad_mitad && item.categoria_nombre?.toLowerCase() === 'pizza' && (
+                          { !item.es_mitad_mitad && item.requiere_receta && (
                             <button 
                               className="btn btn-outline"
                               title="Armar Receta BOM"
@@ -1130,15 +1144,33 @@ const BackOffice = () => {
                 </div>
                 <table>
                   <thead>
-                    <tr><th>ID</th><th>Nombre de Categoría</th><th>Acciones</th></tr>
+                    <tr><th>ID</th><th>Nombre</th><th>¿Requiere Receta?</th><th>Acciones</th></tr>
                   </thead>
                   <tbody>
                     {categorias.length === 0 ? (
-                      <tr><td colSpan="3" style={{ textAlign: 'center', padding: '30px' }}>No hay categorías registradas.</td></tr>
+                      <tr><td colSpan="4" style={{ textAlign: 'center', padding: '30px' }}>No hay categorías registradas.</td></tr>
                     ) : categorias.map(cat => (
                       <tr key={cat.id}>
                         <td style={{ color: 'var(--text-muted)' }}>#{cat.id}</td>
                         <td><strong>{cat.nombre}</strong></td>
+                        <td>
+                          <button
+                            onClick={() => handleToggleReceta(cat.id, cat.requiere_receta)}
+                            style={{
+                              background: cat.requiere_receta ? '#2ecc71' : '#e0e0e0',
+                              color: cat.requiere_receta ? 'white' : '#777',
+                              border: 'none',
+                              padding: '5px 14px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {cat.requiere_receta ? '✅ Sí' : '— No'}
+                          </button>
+                        </td>
                         <td>
                           <button 
                             className="btn btn-outline" 

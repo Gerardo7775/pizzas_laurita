@@ -5,7 +5,7 @@ const getProductosYRecetas = async (req, res) => {
     try {
         const query = `
             SELECT 
-                p.id as producto_id, p.nombre as producto_nombre, p.es_mitad_mitad, c.nombre as categoria_nombre,
+                p.id as producto_id, p.nombre as producto_nombre, p.es_mitad_mitad, c.nombre as categoria_nombre, c.requiere_receta,
                 pr.id as presentacion_id, t.nombre as presentacion_nombre, t.id as tamano_id, pr.precio,
                 COALESCE(
                     json_agg(
@@ -23,7 +23,7 @@ const getProductosYRecetas = async (req, res) => {
             JOIN tamanos t ON pr.tamano_id = t.id
             LEFT JOIN recetas r ON pr.id = r.presentacion_id
             LEFT JOIN ingredientes i ON r.ingrediente_id = i.id
-            GROUP BY p.id, p.nombre, p.es_mitad_mitad, c.nombre, pr.id, t.nombre, t.id, pr.precio
+            GROUP BY p.id, p.nombre, p.es_mitad_mitad, c.nombre, c.requiere_receta, pr.id, t.nombre, t.id, pr.precio
             ORDER BY p.nombre, pr.precio;
         `;
         const result = await db.query(query);
@@ -80,13 +80,13 @@ const getCategorias = async (req, res) => {
 
 // 3.5 Crear nueva categoría
 const crearCategoria = async (req, res) => {
-    const { nombre } = req.body;
+    const { nombre, requiere_receta } = req.body;
     if (!nombre) return res.status(400).json({ success: false, message: 'El nombre es obligatorio' });
     
     try {
         const result = await db.query(
-            'INSERT INTO categorias (nombre) VALUES ($1) RETURNING *',
-            [nombre]
+            'INSERT INTO categorias (nombre, requiere_receta) VALUES ($1, $2) RETURNING *',
+            [nombre, requiere_receta || false]
         );
         res.json({ success: true, data: result.rows[0], message: 'Categoría creada' });
     } catch (error) {
@@ -118,13 +118,13 @@ const eliminarCategoria = async (req, res) => {
 
 const editarCategoria = async (req, res) => {
     const { id } = req.params;
-    const { nombre } = req.body;
+    const { nombre, requiere_receta } = req.body;
     if (!nombre) return res.status(400).json({ success: false, message: 'El nombre es obligatorio' });
 
     try {
         const result = await db.query(
-            'UPDATE categorias SET nombre = $1 WHERE id = $2 RETURNING *',
-            [nombre, id]
+            'UPDATE categorias SET nombre = $1, requiere_receta = $2 WHERE id = $3 RETURNING *',
+            [nombre, requiere_receta ?? false, id]
         );
         if (result.rowCount === 0) return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
         res.json({ success: true, data: result.rows[0], message: 'Categoría actualizada' });
