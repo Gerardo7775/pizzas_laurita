@@ -1877,7 +1877,8 @@ const BackOffice = () => {
                 >
                   <option value="">-- Selecciona una opción --</option>
                   {inventario.filter(i => 
-                    i.nombre.toLowerCase().includes(busquedaBom.toLowerCase())
+                    i.nombre.toLowerCase().includes(busquedaBom.toLowerCase()) &&
+                    !ingredientesReceta.some(ing => ing.ingrediente_id === i.id)
                   ).map(item => (
                     <option key={item.id} value={item.id}>
                       {item.nombre} (Se mide en {item.unidad_receta})
