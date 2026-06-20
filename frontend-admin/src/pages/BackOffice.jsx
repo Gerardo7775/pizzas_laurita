@@ -132,14 +132,19 @@ const BackOffice = () => {
 
   const comodinesFiltrados = useMemo(() => {
     const arr = [];
-    categorias.forEach(cat => tamanos.forEach(tam => {
-      const nombreDinamico = `Cualquier ${cat.nombre} - ${tam.nombre}`;
-      if (nombreDinamico.toLowerCase().includes(comboSearchQuery.toLowerCase())) {
-        arr.push({ id: `DYN_${cat.id}_${tam.id}`, label: nombreDinamico });
-      }
-    }));
+    categorias.forEach(cat => {
+      const tamanosValidos = tamanos.filter(tam => 
+        catalogo.some(prod => prod.categoria_nombre === cat.nombre && prod.presentacion_nombre === tam.nombre)
+      );
+      tamanosValidos.forEach(tam => {
+        const nombreDinamico = `Cualquier ${cat.nombre} - ${tam.nombre}`;
+        if (nombreDinamico.toLowerCase().includes(comboSearchQuery.toLowerCase())) {
+          arr.push({ id: `DYN_${cat.id}_${tam.id}`, label: nombreDinamico });
+        }
+      });
+    });
     return arr;
-  }, [comboSearchQuery, categorias, tamanos]);
+  }, [comboSearchQuery, categorias, tamanos, catalogo]);
 
   const fijosFiltrados = useMemo(() => {
     return catalogo
