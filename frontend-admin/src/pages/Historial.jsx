@@ -36,14 +36,24 @@ const Historial = () => {
     
     // Escuchar nuevos pedidos en cocina (para ponerlos en el historial como PENDIENTE)
     socket.on('nuevo_pedido_cocina', (data) => {
-      setPedidos(prev => [data, ...prev]);
+      setPedidos(prev => [{
+        ...data,
+        estado: data.estado || 'PENDIENTE',
+        fecha_creacion: data.fecha_creacion || new Date().toISOString(),
+        total: data.total || 0,
+        fecha_entrega: null
+      }, ...prev]);
     });
 
     // Escuchar actualizaciones de estado (incluido ENTREGADO y CANCELADO)
     socket.on('estado_pedido_actualizado', (data) => {
       setPedidos(prev => prev.map(p => {
         if (p.id === parseInt(data.id)) {
-          return { ...p, estado: data.nuevo_estado, fecha_entrega: data.nuevo_estado === 'ENTREGADO' ? new Date().toISOString() : p.fecha_entrega };
+          const updated = { ...p, estado: data.nuevo_estado };
+          if (data.nuevo_estado === 'ENTREGADO') {
+            updated.fecha_entrega = new Date().toISOString();
+          }
+          return updated;
         }
         return p;
       }));

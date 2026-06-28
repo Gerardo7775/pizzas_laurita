@@ -92,7 +92,7 @@ module.exports = {
                 LEFT JOIN productos prod ON pres.producto_id = prod.id
                 LEFT JOIN tamanos tam ON pres.tamano_id = tam.id
                 WHERE p.estado IN ('PENDIENTE', 'PREPARANDO', 'HORNEANDO', 'LISTO_ENTREGA')
-                GROUP BY p.id
+                GROUP BY p.id, p.folio, p.cliente_nombre, p.estado, p.tiempo_estimado_min, p.inicio_preparacion, p.alerta_retraso, p.fecha_creacion
                 ORDER BY p.fecha_creacion ASC
             `;
             const result = await db.query(query);
@@ -131,14 +131,14 @@ module.exports = {
                 setClauses.push(`
                     tiempo_real_min = CASE 
                         WHEN inicio_preparacion IS NOT NULL 
-                        THEN ROUND(EXTRACT(EPOCH FROM (NOW() - inicio_preparacion)) / 60, 2)
+                        THEN LEAST(9999.99, ROUND(EXTRACT(EPOCH FROM (NOW() - inicio_preparacion)) / 60, 2))
                         ELSE NULL 
                     END
                 `);
                 setClauses.push(`
                     tiempo_excedido_min = CASE 
                         WHEN inicio_preparacion IS NOT NULL 
-                        THEN GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - inicio_preparacion)) / 60 - tiempo_estimado_min, 2))
+                        THEN LEAST(9999.99, GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - inicio_preparacion)) / 60 - tiempo_estimado_min, 2)))
                         ELSE NULL 
                     END
                 `);
@@ -189,8 +189,9 @@ module.exports = {
                 if (client) await client.query('ROLLBACK');
                 // 42703 = columna inexistente (migración pendiente)
                 // 22P02 = tipo de dato incompatible (ej: guardar texto en columna boolean)
-                if (queryErr.code === '42703' || queryErr.code === '22P02') {
-                    console.warn(`⚠️  Error de schema (${queryErr.code}). Ejecutando UPDATE mínimo:`, queryErr.message);
+                // 22003 = desbordamiento numérico (ej: pedido muy antiguo con tiempos enormes)
+                if (['42703', '22P02', '22003'].includes(queryErr.code)) {
+                    console.warn(`⚠️  Error de schema/datos (${queryErr.code}). Ejecutando UPDATE mínimo:`, queryErr.message);
                     result = await db.query(
                         'UPDATE pedidos SET estado = $1 WHERE id = $2 RETURNING id, estado, folio, total',
                         [estado, id]

@@ -120,15 +120,45 @@ const CocinaKDS = () => {
       setPedidos((prevPedidos) => [...prevPedidos, nuevoPedido]);
     };
 
+    // 3. ESCUCHAR CAMBIOS DE ESTADO (desde otra pantalla KDS, admin, o el mismo backend)
+    const onEstadoActualizado = (data) => {
+      console.log('Estado actualizado vía WebSocket:', data);
+      const { id, nuevo_estado } = data;
+      const idNum = parseInt(id);
+      
+      // Si el pedido fue ENTREGADO o CANCELADO, quitarlo del tablero
+      if (nuevo_estado === 'ENTREGADO' || nuevo_estado === 'CANCELADO') {
+        setPedidos(prev => prev.filter(p => p.id !== idNum && p.id_local !== idNum));
+        // Limpiar alertas de ese pedido
+        setAlertasBanner(prev => prev.filter(a => a.id !== idNum));
+      } else {
+        // Actualizar el estado del pedido en el tablero
+        setPedidos(prev => prev.map(p => {
+          if (p.id === idNum || p.id_local === idNum) {
+            const updated = { ...p, estado: nuevo_estado };
+            // Si pasa a PREPARANDO, registrar el inicio
+            if (nuevo_estado === 'PREPARANDO' && !p.inicio_preparacion) {
+              updated.inicio_preparacion = new Date().toISOString();
+              updated.alerta_retraso = 'NORMAL';
+            }
+            return updated;
+          }
+          return p;
+        }));
+      }
+    };
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('nuevo_pedido_cocina', onNuevoPedido);
+    socket.on('estado_pedido_actualizado', onEstadoActualizado);
 
     // Limpiamos los listeners para evitar duplicados en re-renderizados
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('nuevo_pedido_cocina', onNuevoPedido);
+      socket.off('estado_pedido_actualizado', onEstadoActualizado);
     };
   }, []);
 
@@ -143,17 +173,21 @@ const CocinaKDS = () => {
     const nuevoEstado = transiciones[estadoActual];
 
     if (nuevoEstado) {
-      setPedidos(pedidos.map(p => 
-        p.id_local === id ? { ...p, estado: nuevoEstado } : p
+      setPedidos(prev => prev.map(p => 
+        p.id_local === id ? { ...p, estado: nuevoEstado, ...(nuevoEstado === 'PREPARANDO' && !p.inicio_preparacion ? { inicio_preparacion: new Date().toISOString(), alerta_retraso: 'NORMAL' } : {}) } : p
       ));
       try {
         await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, { estado: nuevoEstado });
       } catch (e) {
         console.error('Error al sincronizar estado con servidor', e);
+        // Revertir en caso de fallo
+        setPedidos(prev => prev.map(p => 
+          p.id_local === id ? { ...p, estado: estadoActual } : p
+        ));
       }
     } else {
       // Despacharlo (LISTO_ENTREGA → ENTREGADO)
-      setPedidos(pedidos.filter(p => p.id_local !== id));
+      setPedidos(prev => prev.filter(p => p.id_local !== id));
       try {
         await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, { estado: 'ENTREGADO' });
       } catch (e) {
@@ -303,7 +337,8 @@ const CocinaKDS = () => {
   const confirmarCancelacion = async () => {
     if (!pedidoACancelar) return;
     const { id } = pedidoACancelar;
-    setPedidos(pedidos.filter(p => p.id_local !== id));
+    setPedidos(prev => prev.filter(p => p.id_local !== id));
+    setAlertasBanner(prev => prev.filter(a => a.id !== id));
     setCancelModalOpen(false);
     try {
       await axios.patch(`${API_URL}/api/pedidos/${id}/estado`, {

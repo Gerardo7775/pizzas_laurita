@@ -42,6 +42,7 @@ app.use('/api/menu', verificarToken, require('./src/interfaces/routes/menu.route
 app.use('/api/catalogo', verificarToken, require('./src/interfaces/routes/catalogo.routes'));
 app.use('/api/paquetes', verificarToken, require('./src/interfaces/routes/paquetes.routes'));
 app.use('/api/estadisticas', verificarToken, require('./src/interfaces/routes/estadisticas.routes'));
+app.use('/api/usuarios', verificarToken, require('./src/interfaces/routes/usuarios.routes'));
 
 // ==========================================
 // RUTAS REST BÁSICAS (Prueba de vida)

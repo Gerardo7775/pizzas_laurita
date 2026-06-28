@@ -46,6 +46,14 @@ const BackOffice = () => {
   const [paquetes, setPaquetes] = useState([]);
   const [ventasDia, setVentasDia] = useState(0);
   const [_cargando, setCargando] = useState(false);
+
+  // --- ESTADOS USUARIOS ---
+  const [usuarios, setUsuarios] = useState([]);
+  const [isUsuarioModalOpen, setIsUsuarioModalOpen] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState(null);
+  const [nuevoUsuario, setNuevoUsuario] = useState({
+    nombre: '', usuario: '', password: '', rol: 'CAJERO', activo: true
+  });
   
   // --- ESTADOS DEL MODAL PRODUCTO ---
   const [isProductoModalOpen, setIsProductoModalOpen] = useState(false);
@@ -183,13 +191,14 @@ const BackOffice = () => {
     try {
       fetchVentasDia(); // Parcial
       // Usamos allSettled: si una falla, las demás siguen actualizando la UI
-      const [resInv, resAle, resCat, resPaq, resCategorias, resTamanos] = await Promise.allSettled([
+      const [resInv, resAle, resCat, resPaq, resCategorias, resTamanos, resUsuarios] = await Promise.allSettled([
         axios.get(`${API_URL}/api/inventario`),
         axios.get(`${API_URL}/api/inventario/alertas`),
         axios.get(`${API_URL}/api/catalogo`),
         axios.get(`${API_URL}/api/paquetes`),
         axios.get(`${API_URL}/api/catalogo/categorias`),
-        axios.get(`${API_URL}/api/catalogo/tamanos`)
+        axios.get(`${API_URL}/api/catalogo/tamanos`),
+        axios.get(`${API_URL}/api/usuarios`)
       ]);
 
       if (resInv.status === 'fulfilled')  setInventario(resInv.value.data.data || []);
@@ -207,9 +216,10 @@ const BackOffice = () => {
         setTamanos(tams);
         if (tams.length > 0) setNuevoProducto(prev => ({ ...prev, tamano_id: tams[0].id }));
       }
+      if (resUsuarios.status === 'fulfilled') setUsuarios(resUsuarios.value.data.data || []);
 
       // Log de errores individuales sin romper la UI
-      [resInv, resAle, resCat, resPaq, resCategorias, resTamanos].forEach((res, i) => {
+      [resInv, resAle, resCat, resPaq, resCategorias, resTamanos, resUsuarios].forEach((res, i) => {
         if (res.status === 'rejected') {
           console.warn(`API fallo en petición ${i}:`, res.reason?.message);
         }
@@ -779,6 +789,41 @@ const BackOffice = () => {
     }
   };
 
+  // --- HANDLERS USUARIOS ---
+  const handleGuardarUsuario = async () => {
+    if (!nuevoUsuario.nombre || !nuevoUsuario.usuario || !nuevoUsuario.rol) {
+      return showToast('Faltan campos obligatorios', 'warning');
+    }
+    if (!usuarioEditando && !nuevoUsuario.password) {
+      return showToast('La contraseña es obligatoria para nuevos usuarios', 'warning');
+    }
+
+    try {
+      if (usuarioEditando) {
+        await axios.put(`${API_URL}/api/usuarios/${usuarioEditando.id}`, nuevoUsuario);
+        showToast('Usuario actualizado! 👤');
+      } else {
+        await axios.post(`${API_URL}/api/usuarios`, nuevoUsuario);
+        showToast('Usuario creado! 👤');
+      }
+      setIsUsuarioModalOpen(false);
+      fetchDatos();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Error al guardar usuario', 'error');
+    }
+  };
+
+  const handleToggleUsuario = async (id, activoActual) => {
+    try {
+      const u = usuarios.find(x => x.id === id);
+      await axios.put(`${API_URL}/api/usuarios/${id}`, { ...u, activo: !activoActual });
+      showToast(activoActual ? 'Usuario deshabilitado' : 'Usuario habilitado');
+      fetchDatos();
+    } catch {
+      showToast('Error al cambiar estado de usuario', 'error');
+    }
+  };
+
   const inventarioFiltrado = inventario.filter(item => 
     item.nombre.toLowerCase().includes(busquedaInventario.toLowerCase()) ||
     item.unidad_compra.toLowerCase().includes(busquedaInventario.toLowerCase()) ||
@@ -1310,6 +1355,84 @@ const BackOffice = () => {
             </div>
           </>
         )}
+
+        {/* ================================== */}
+        {/* VISTA 6: USUARIOS                  */}
+        {/* ================================== */}
+        {activePath === 'usuarios' && (
+          <>
+            <div className="table-header">
+              <h1 style={{ marginTop: 0 }}>Gestión de Usuarios y Roles</h1>
+              <button className="btn btn-primary" onClick={() => {
+                setUsuarioEditando(null);
+                setNuevoUsuario({ nombre: '', usuario: '', password: '', rol: 'CAJERO', activo: true });
+                setIsUsuarioModalOpen(true);
+              }}>
+                + Nuevo Usuario
+              </button>
+            </div>
+            
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Usuario (Login)</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuarios.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ color: 'var(--text-muted)' }}>#{u.id}</td>
+                      <td><strong>{u.nombre}</strong></td>
+                      <td><code>{u.usuario}</code></td>
+                      <td>
+                        <span className="status-badge" style={{ background: u.rol === 'GERENTE' ? '#3498db' : u.rol === 'ADMIN' ? '#9b59b6' : '#95a5a6', color: 'white' }}>
+                          {u.rol}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleToggleUsuario(u.id, u.activo)}
+                          style={{
+                            background: u.activo ? '#2ecc71' : '#e0e0e0',
+                            color: u.activo ? 'white' : '#777',
+                            border: 'none', padding: '5px 14px', borderRadius: '20px',
+                            fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {u.activo ? '✅ Activo' : '— Inactivo'}
+                        </button>
+                      </td>
+                      <td>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ padding: '4px 8px', fontSize: '12px' }}
+                          onClick={() => {
+                            setUsuarioEditando(u);
+                            setNuevoUsuario({ nombre: u.nombre, usuario: u.usuario, password: '', rol: u.rol, activo: u.activo });
+                            setIsUsuarioModalOpen(true);
+                          }}
+                        >
+                          ✏️ Editar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {usuarios.length === 0 && (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>No hay usuarios registrados.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ================================== */}
@@ -1642,6 +1765,43 @@ const BackOffice = () => {
             <div className="modal-actions" style={{ borderTop: '1px solid var(--border)', paddingTop: '15px' }}>
               <button className="btn btn-outline" onClick={() => setIsPaqueteModalOpen(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={guardarPaqueteEnBD}>💾 Guardar Combo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ================================== */}
+      {/* MODAL USUARIO                      */}
+      {/* ================================== */}
+      {isUsuarioModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ width: '450px' }}>
+            <h2>{usuarioEditando ? '✏️ Editar Usuario' : '👤 Nuevo Usuario'}</h2>
+            <div className="form-group">
+              <label>Nombre Completo *</label>
+              <input type="text" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario({...nuevoUsuario, nombre: e.target.value})} placeholder="Ej. Juan Pérez" />
+            </div>
+            <div className="form-group">
+              <label>Usuario (Para login) *</label>
+              <input type="text" value={nuevoUsuario.usuario} onChange={e => setNuevoUsuario({...nuevoUsuario, usuario: e.target.value})} placeholder="Ej. juanp" />
+            </div>
+            <div className="form-group">
+              <label>Contraseña {usuarioEditando ? '(Opcional: Déjalo en blanco para no cambiar)' : '*'}</label>
+              <input type="password" value={nuevoUsuario.password} onChange={e => setNuevoUsuario({...nuevoUsuario, password: e.target.value})} placeholder="••••••••" />
+            </div>
+            <div className="form-group">
+              <label>Rol en el Sistema *</label>
+              <select value={nuevoUsuario.rol} onChange={e => setNuevoUsuario({...nuevoUsuario, rol: e.target.value})}>
+                <option value="CAJERO">Cajero (Punto de Venta)</option>
+                <option value="COCINERO">Cocinero (KDS)</option>
+                <option value="GERENTE">Gerente (Admin y Sucursal)</option>
+                <option value="ADMIN">Administrador (Todo)</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setIsUsuarioModalOpen(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleGuardarUsuario}>Guardar Usuario</button>
             </div>
           </div>
         </div>

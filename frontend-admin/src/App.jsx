@@ -93,6 +93,7 @@ function App() {
           <Route path="inventario"   element={<BackOffice />} />
           <Route path="catalogo"     element={<BackOffice />} />
           <Route path="paquetes"     element={<BackOffice />} />
+          <Route path="usuarios"     element={<BackOffice />} />
           <Route path="historial"    element={<Historial />} />
           <Route path="estadisticas" element={<Estadisticas />} />
         </Route>
