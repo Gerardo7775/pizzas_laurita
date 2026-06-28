@@ -56,6 +56,7 @@ module.exports = {
                     p.tiempo_estimado_min,
                     p.inicio_preparacion,
                     p.alerta_retraso,
+                    p.fecha_creacion,
                     to_char(p.fecha_creacion, 'HH24:MI') AS hora_ingreso,
                     COALESCE(
                         json_agg(

@@ -60,6 +60,7 @@ const Historial = () => {
     });
 
     return () => socket.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- LÓGICA DE FILTRADO Y ORDENAMIENTO ---

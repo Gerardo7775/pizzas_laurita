@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import './CocinaKDS.css';
@@ -19,6 +19,7 @@ const CocinaKDS = () => {
   const [alertasBanner, setAlertasBanner] = useState([]); // [{id, folio, nivel, desc}]
   const alertasRegistradasRef = useRef(new Set()); // IDs + nivel ya notificados
   const [tick, setTick] = useState(0); // fuerza re-render del timer
+  const now = useMemo(() => Date.now(), [tick]); // timestamp estable por ciclo de render
 
   // Configuración de sonido (persiste en localStorage)
   const [sonidoActivo, setSonidoActivo] = useState(() => localStorage.getItem('kds_sonido') !== 'false');
@@ -59,9 +60,15 @@ const CocinaKDS = () => {
   const hablarAlerta = (folio, nivel) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel(); // cancelar si ya estaba hablando
-    const texto = nivel === 'EXCEDIDO'
-      ? `Atención. El pedido ${folio} ha superado el tiempo estimado. Favor de atenderlo cuanto antes.`
-      : `Aviso. El pedido ${folio} está al ochenta por ciento de su tiempo estimado.`;
+    
+    const mensajes = {
+      'EXCEDIDO': `Atención. El pedido ${folio} ha superado el tiempo estimado. Favor de atenderlo cuanto antes.`,
+      'ADVERTENCIA': `Aviso. El pedido ${folio} está al ochenta por ciento de su tiempo estimado.`,
+      'PENDIENTE_ESPERA': `Aviso. El pedido ${folio} lleva un largo tiempo en espera sin comenzar a prepararse.`,
+      'PENDIENTE_AUTO': `Atención. Se ha pasado el pedido ${folio} a proceso de preparación de manera automática.`
+    };
+    const texto = mensajes[nivel] || mensajes['ADVERTENCIA'];
+    
     const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = 'es-MX';
     utterance.rate = 0.92;
@@ -160,6 +167,7 @@ const CocinaKDS = () => {
       socket.off('nuevo_pedido_cocina', onNuevoPedido);
       socket.off('estado_pedido_actualizado', onEstadoActualizado);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Función para mover el pedido de columna en el tablero Kanban y BD
@@ -198,14 +206,63 @@ const CocinaKDS = () => {
   // ============================================================
   // SISTEMA DE ALERTAS POR RETRASO
   // ============================================================
+  const autoAvanzadosRef = useRef(new Set()); // IDs ya auto-avanzados a PREPARANDO
+
   useEffect(() => {
     const intervalo = setInterval(() => {
       setTick(t => t + 1); // fuerza re-render para actualizar la barra visualmente
 
       setPedidos(prev => {
         let cambiaron = false;
+        const autoAvanzar = []; // pedidos a avanzar automáticamente
+
         const actualizados = prev.map(p => {
-          // Rastrear PREPARANDO, HORNEANDO y LISTO_ENTREGA con inicio registrado
+          // ============================================================
+          // A) PENDIENTE: Alerta a 2 min, auto-avance a 5 min
+          // ============================================================
+          if (p.estado === 'PENDIENTE' && p.fecha_creacion) {
+            const minEspera = (Date.now() - new Date(p.fecha_creacion).getTime()) / 60000;
+
+            // A los 5 min: auto-avanzar a PREPARANDO
+            if (minEspera >= 5 && !autoAvanzadosRef.current.has(p.id)) {
+              autoAvanzadosRef.current.add(p.id);
+              autoAvanzar.push(p);
+              cambiaron = true;
+              // Limpiar la alerta de espera y notificar por voz
+              setAlertasBanner(prev2 => prev2.filter(a => a.id !== p.id));
+              if (sonidoActivoRef.current) reproducirBeep();
+              if (vozActivaRef.current) {
+                setTimeout(() => hablarAlerta(p.folio, 'PENDIENTE_AUTO'), sonidoActivoRef.current ? 900 : 0);
+              }
+              return {
+                ...p,
+                estado: 'PREPARANDO',
+                inicio_preparacion: new Date().toISOString(),
+                alerta_retraso: 'NORMAL'
+              };
+            }
+
+            // A los 2 min: alerta de advertencia
+            if (minEspera >= 2) {
+              const clave = `${p.id}-PENDIENTE_ESPERA`;
+              if (!alertasRegistradasRef.current.has(clave)) {
+                alertasRegistradasRef.current.add(clave);
+                setAlertasBanner(prev2 => [
+                  ...prev2.filter(a => a.id !== p.id),
+                  { id: p.id, folio: p.folio, nivel: 'ADVERTENCIA', desc: `lleva ${Math.floor(minEspera)} min sin empezar a prepararse ⏳` }
+                ]);
+                if (sonidoActivoRef.current) reproducirBeep();
+                if (vozActivaRef.current) {
+                  setTimeout(() => hablarAlerta(p.folio, 'PENDIENTE_ESPERA'), sonidoActivoRef.current ? 900 : 0);
+                }
+              }
+            }
+            return p;
+          }
+
+          // ============================================================
+          // B) PREPARANDO / HORNEANDO / LISTO_ENTREGA: alertas de tiempo
+          // ============================================================
           if (!['PREPARANDO', 'HORNEANDO', 'LISTO_ENTREGA'].includes(p.estado) || !p.inicio_preparacion) return p;
 
           const tiempoEstimado = parseInt(p.tiempo_estimado_min) || 20;
@@ -243,15 +300,24 @@ const CocinaKDS = () => {
           }
           return p;
         });
+
+        // Enviar los auto-avances al backend (fuera del map para no bloquear el render)
+        autoAvanzar.forEach(p => {
+          axios.patch(`${API_URL}/api/pedidos/${p.id}/estado`, { estado: 'PREPARANDO' })
+            .then(() => console.log(`⏩ Pedido #${p.folio} auto-avanzado a PREPARANDO`))
+            .catch(e => console.error('Error auto-avanzando pedido', e));
+        });
+
         return cambiaron ? actualizados : prev;
       });
     }, 10000);
 
     return () => clearInterval(intervalo);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper: devuelve color, label y % según el tiempo transcurrido
-  const getAlertaInfo = (pedido) => {
+  const getAlertaInfo = (pedido, ahora) => {
     const enSeguimiento = ['PREPARANDO', 'HORNEANDO', 'LISTO_ENTREGA'].includes(pedido.estado);
     if (!enSeguimiento) return null;
 
@@ -261,7 +327,6 @@ const CocinaKDS = () => {
 
     // Sin inicio registrado (pedido antiguo antes de la migración)
     if (!pedido.inicio_preparacion) {
-      const iconoDefault = listo ? '✅' : enHorno ? '🔥' : '⏳';
       const labelDefault = listo
         ? `✅ Listo (estimado: ${tiempoEstimado} min)`
         : enHorno ? `🔥 En horno (estimado: ${tiempoEstimado} min)`
@@ -269,7 +334,7 @@ const CocinaKDS = () => {
       return { color: '#74b9ff', bg: 'rgba(116,185,255,0.08)', label: labelDefault, pct: 0, border: '#74b9ff', pulse: false };
     }
 
-    const elapsed = (Date.now() - new Date(pedido.inicio_preparacion).getTime()) / 60000;
+    const elapsed = (ahora - new Date(pedido.inicio_preparacion).getTime()) / 60000;
     const pct = elapsed / tiempoEstimado;
     const nivel = pedido.alerta_retraso || 'NORMAL';
     const minRestantes = Math.max(0, tiempoEstimado - elapsed).toFixed(0);
@@ -361,7 +426,7 @@ const CocinaKDS = () => {
         <div className="col-header">{emoji} {titulo} ({pedidosColumna.length})</div>
         
         {pedidosColumna.map((pedido) => {
-          const alerta = getAlertaInfo(pedido);
+          const alerta = getAlertaInfo(pedido, now);
           const cardBorder = alerta ? alerta.border : (estadoFiltro === 'PENDIENTE' ? '#e74c3c' : '#3a3a5c');
           const cardBg = alerta ? alerta.bg : '';
 
@@ -382,7 +447,29 @@ const CocinaKDS = () => {
               </span>
             </div>
 
-            {/* BARRA DE PROGRESO DE TIEMPO - solo en PREPARANDO */}
+            {/* INDICADOR DE ESPERA PENDIENTE - countdown visual */}
+            {estadoFiltro === 'PENDIENTE' && pedido.fecha_creacion && (() => {
+              const minEspera = (now - new Date(pedido.fecha_creacion).getTime()) / 60000;
+              const pctAutoAvance = Math.min((minEspera / 5) * 100, 100);
+              const color = minEspera >= 4 ? '#e74c3c' : minEspera >= 2 ? '#f39c12' : '#a0a0c0';
+              const label = minEspera >= 4
+                ? `⚡ Auto-inicio en ${Math.max(0, Math.ceil((5 - minEspera) * 60))}s...`
+                : minEspera >= 2
+                ? `⏳ Esperando ${Math.floor(minEspera)} min...`
+                : `🕐 ${Math.floor(minEspera * 60)}s en espera`;
+              return (
+                <div style={{ margin: '8px 0', padding: '0 2px' }}>
+                  <div style={{ fontSize: '11px', color, marginBottom: '3px', fontWeight: '600' }}>
+                    {label}
+                  </div>
+                  <div style={{ height: '4px', background: '#2a2a3e', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pctAutoAvance}%`, background: color, borderRadius: '2px', transition: 'width 1s linear' }} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* BARRA DE PROGRESO DE TIEMPO - en PREPARANDO/HORNEANDO/LISTO */}
             {alerta && (
               <div style={{ margin: '8px 0', padding: '0 2px' }}>
                 <div style={{ fontSize: '11px', color: alerta.color, marginBottom: '3px', fontWeight: '600' }}>

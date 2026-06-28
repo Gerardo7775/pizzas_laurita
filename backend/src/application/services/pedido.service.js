@@ -88,7 +88,9 @@ const prepararPedidoUseCase = async (payload, io) => {
         folio,
         cliente_nombre: cliente.nombre,
         estado: 'PENDIENTE',
+        fecha_creacion: new Date().toISOString(),
         hora_ingreso: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        tiempo_estimado_min: pedido.tiempo_estimado_min || 15,
         items: pedido.items,
         total: pedido.total_calculado
       });
