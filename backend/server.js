@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Inicialización de la App
@@ -9,7 +11,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Configuración de WebSockets (Socket.io)
-const origenesPermitidos = process.env.FRONTEND_URL || '*';
+// CORS Estricto: Solo acepta peticiones de URLs definidas o localhosts
+const origenesPermitidos = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',') 
+  : ['http://localhost:5173', 'http://localhost:5174'];
 
 const io = new Server(server, {
   cors: {
@@ -20,9 +25,34 @@ const io = new Server(server, {
 
 // Middlewares
 app.use(cors({
-  origin: origenesPermitidos
+  origin: function (origin, callback) {
+    if (!origin || origenesPermitidos.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado por CORS Estricto. Origen no autorizado.'));
+    }
+  },
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
 }));
 app.use(express.json()); // Para poder leer los JSON que envíe React
+
+// 🛡️ Casco de Seguridad HTTP (Oculta información del servidor como "Express")
+app.use(helmet());
+
+// ⛔ Bloqueo de Fuerza Bruta (Límite general para evitar DoS)
+const limiterGeneral = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 120, // Límite de peticiones por minuto por IP
+  message: { success: false, message: 'Demasiadas peticiones. Por favor, intenta más tarde.' }
+});
+app.use(limiterGeneral);
+
+// 🔒 Límite estricto para Login (Evita ataques de fuerza bruta adivinando contraseñas)
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 5, // Máximo 5 intentos por minuto
+  message: { success: false, message: 'Demasiados intentos fallidos. IP bloqueada por 1 minuto.' }
+});
 
 // ==========================================
 // MIDDLEWARES DE SEGURIDAD
@@ -32,8 +62,8 @@ const verificarToken = require('./src/middlewares/auth.middleware');
 // ==========================================
 // IMPORTACIÓN DE RUTAS (Clean Architecture)
 // ==========================================
-// 🔓 RUTAS PÚBLICAS
-app.use('/api/auth', require('./src/interfaces/routes/auth.routes'));    // Login
+// 🔓 RUTAS PÚBLICAS (Se le aplica el candado estricto al login)
+app.use('/api/auth', loginLimiter, require('./src/interfaces/routes/auth.routes'));    // Login
 
 // 🔐 RUTAS PROTEGIDAS (Requieren Gafete JWT)
 app.use('/api/pedidos', verificarToken, require('./src/interfaces/routes/pedidos.routes'));

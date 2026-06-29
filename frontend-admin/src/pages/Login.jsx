@@ -24,8 +24,12 @@ const Login = ({ onLoginSuccess }) => {
         onLoginSuccess(); // Le avisamos a App.jsx que ya entramos
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Credenciales incorrectas';
-      setError(msg);
+      if (err.response?.status === 429) {
+        setError('Intenta más tarde, servidores bloqueados ⛔');
+      } else {
+        const msg = err.response?.data?.message || 'Credenciales incorrectas';
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
