@@ -4,6 +4,18 @@ import './index.css'
 import App from './App.jsx'
 import axios from 'axios'
 
+// 🛑 BLOQUEADOR DE REACT DEVTOOLS (Solo en producción)
+if (import.meta.env.MODE === 'production') {
+  if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === 'object') {
+    window.__REACT_DEVTOOLS_GLOBAL_HOOK__.inject = function () {};
+  }
+  // Limpieza agresiva de consola por si algo sobrevive a Vite
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 // 1. Interceptor de IDA (Pone el Gafete)
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
